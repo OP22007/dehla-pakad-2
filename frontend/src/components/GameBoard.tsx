@@ -620,6 +620,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                  isActive={isMyTurn}
                  layout={isMobileLandscape ? 'scroll' : 'fan'}
                  hiddenTrumpCardId={gameData.hiddenTrumpCard?.id}
+                 isTrumpRevealed={gameData.isTrumpRevealed}
                />
             </div>
             

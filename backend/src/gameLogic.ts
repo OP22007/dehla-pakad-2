@@ -362,6 +362,7 @@ export class GameLogic {
     // Hide Trump if not revealed
     if (!state.isTrumpRevealed && playerId !== state.trumpCallerId) {
        publicState.trumpSuit = null;
+       publicState.hiddenTrumpCard = null;
     }
 
     // Hide opponents' won cards (as per requirement)

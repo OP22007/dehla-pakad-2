@@ -18,6 +18,7 @@ interface CardHandProps {
   isActive?: boolean;
   layout?: 'fan' | 'scroll'; // New prop for layout mode
   hiddenTrumpCardId?: string | null;
+  isTrumpRevealed?: boolean;
 }
 
 export const CardHand: React.FC<CardHandProps> = ({
@@ -30,7 +31,8 @@ export const CardHand: React.FC<CardHandProps> = ({
   className = '',
   isActive = true,
   layout = 'fan',
-  hiddenTrumpCardId
+  hiddenTrumpCardId,
+  isTrumpRevealed = false
 }) => {
   const totalCards = cards.length;
 
@@ -47,6 +49,7 @@ export const CardHand: React.FC<CardHandProps> = ({
           const isValid = isActive && validCardIds ? validCardIds.includes(card.id) : true;
           const isShaking = card.id === shakingCardId;
           const isHiddenTrump = card.id === hiddenTrumpCardId;
+          const cardIsFaceUp = isHiddenTrump && !isTrumpRevealed ? false : isFaceUp;
 
           return (
             <div
@@ -63,7 +66,7 @@ export const CardHand: React.FC<CardHandProps> = ({
               <PlayingCard
                 suit={card.suit}
                 rank={card.rank}
-                isFaceUp={isFaceUp}
+                isFaceUp={cardIsFaceUp}
                 isSelected={isSelected}
                 isValid={isValid}
                 isShaking={isShaking}
@@ -102,6 +105,7 @@ export const CardHand: React.FC<CardHandProps> = ({
         const isValid = isActive && validCardIds ? validCardIds.includes(card.id) : true;
         const isShaking = card.id === shakingCardId;
         const isHiddenTrump = card.id === hiddenTrumpCardId;
+        const cardIsFaceUp = isHiddenTrump && !isTrumpRevealed ? false : isFaceUp;
         
         // Secondary Cue: Lift cards slightly if active
         const activeLift = isActive ? -8 : 0; 
@@ -124,7 +128,7 @@ export const CardHand: React.FC<CardHandProps> = ({
             <PlayingCard
               suit={card.suit}
               rank={card.rank}
-              isFaceUp={isFaceUp}
+              isFaceUp={cardIsFaceUp}
               isSelected={isSelected}
               isValid={isValid}
               isShaking={isShaking}
