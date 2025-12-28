@@ -32,6 +32,7 @@ interface GameState {
   trumpSuit: Suit | null;
   isTrumpRevealed: boolean;
   trumpCallerId: string;
+  trumpRevealerId?: string | null;
   currentTrick: PlayedCard[];
   teams: {
     team1: TeamState;
@@ -164,6 +165,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [isMobileLandscape, setIsMobileLandscape] = useState(false);
   const [showSetsHistory, setShowSetsHistory] = useState(false);
 
+  const prevGameDataRef = React.useRef<GameState | null>(null);
+
   // Detect Mobile Landscape
   useEffect(() => {
     const checkMobileLandscape = () => {
@@ -228,6 +231,48 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     });
   }, [gameData?.teams.team1.tricksWon, gameData?.teams.team2.tricksWon]);
 
+  // Sound Effects Logic
+  useEffect(() => {
+    if (!gameData) return;
+    const prev = prevGameDataRef.current;
+
+    // Helper to play sound
+    const playSound = (name: string) => {
+      const audio = new Audio(`/sounds/${name}.mp3`);
+      audio.volume = 0.6;
+      audio.play().catch(e => console.log('Audio play failed:', e));
+    };
+
+    if (prev) {
+      // Card Played
+      if (gameData.currentTrick.length > prev.currentTrick.length) {
+        playSound('card-place');
+      }
+
+      // Trump Revealed
+      if (!prev.isTrumpRevealed && gameData.isTrumpRevealed) {
+        playSound('trump-reveal');
+      }
+
+      // Trick Won (Collection)
+      if (!prev.lastTrickWinner && gameData.lastTrickWinner) {
+        setTimeout(() => playSound('chips-stack'), 500); // Delay for animation
+      }
+
+      // Game Over
+      if (prev.status !== 'finished' && gameData.status === 'finished') {
+        playSound('win');
+      }
+      
+      // Your Turn
+      if (gameData.currentTurn === currentPlayerId && prev.currentTurn !== currentPlayerId) {
+        playSound('your-turn');
+      }
+    }
+
+    prevGameDataRef.current = gameData;
+  }, [gameData, currentPlayerId]);
+
   if (!gameData) return <div className="min-h-screen bg-casino-green-950 flex items-center justify-center text-gold-200 font-playfair text-2xl">Loading Game...</div>;
 
   // Helper to get relative player positions
@@ -251,7 +296,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                        gameData.status === 'playing' && 
                        !gameData.isTrumpRevealed && 
                        gameData.currentTrick.length > 0 && 
-                       !myCards.some(c => c.suit === gameData.currentTrick[0].card.suit);
+                       !myCards.some(c => c.suit === gameData.currentTrick[0].card.suit && (!gameData.hiddenTrumpCard || c.id !== gameData.hiddenTrumpCard.id));
 
   // Validation Logic
   const getValidCardIds = () => {
@@ -704,7 +749,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               w-16 h-16 md:w-24 md:h-24 rounded-full border-2 md:border-4 flex items-center justify-center
               transform transition-all duration-300
               ${canCallTrump 
-                ? 'bg-gold-gradient border-gold-200 shadow-[0_0_40px_rgba(255,215,0,0.8)] hover:scale-110 active:scale-95 animate-pulse-slow cursor-pointer ring-2 md:ring-4 ring-gold-400/50' 
+                ? 'bg-gold-gradient border-gold-200 shadow-[0_0_60px_rgba(255,215,0,0.9),inset_0_0_20px_rgba(255,255,255,0.5)] hover:scale-110 active:scale-95 animate-pulse-slow cursor-pointer ring-4 ring-gold-400/80 hover:shadow-[0_0_100px_rgba(255,215,0,1)]' 
                 : 'bg-gray-800 border-gray-600 opacity-50 cursor-not-allowed grayscale'}
             `}
           >
@@ -837,6 +882,29 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           currentPlayerId={currentPlayerId}
         />
       )}
+
+      {/* Status Messages Overlay */}
+      <div className="absolute top-24 left-0 right-0 flex flex-col items-center gap-2 z-40 pointer-events-none">
+         {/* Trump Selection Status */}
+         {gameData.status === 'calling_trump' && !isMyTurn && (
+           <div className="bg-black/60 backdrop-blur-md border border-gold-500/30 px-6 py-2 rounded-full animate-pulse flex items-center gap-2">
+             <div className="w-2 h-2 bg-gold-400 rounded-full animate-ping" />
+             <span className="text-gold-200 font-playfair">
+               Waiting for <span className="text-gold-400 font-bold">{getPlayerName(gameData.trumpCallerId)}</span> to select trump...
+             </span>
+           </div>
+         )}
+
+         {/* Trump Reveal Notification */}
+         {gameData.isTrumpRevealed && gameData.trumpRevealerId && (
+           <div className="bg-red-900/90 backdrop-blur-md border border-red-500/50 px-8 py-3 rounded-full animate-bounce-in shadow-[0_0_30px_rgba(220,38,38,0.5)] flex items-center gap-3">
+             <span className="text-2xl">📢</span>
+             <span className="text-white font-bold text-lg">
+               {getPlayerName(gameData.trumpRevealerId)} called Trump!
+             </span>
+           </div>
+         )}
+      </div>
     </div>
   );
 };

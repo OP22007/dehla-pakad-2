@@ -211,8 +211,12 @@ io.on('connection', (socket: Socket) => {
     let gameState = games.get(roomCode);
     if (!gameState) return;
 
+    const room = rooms.get(roomCode);
+    const player = room?.players.find(p => p.socketId === socket.id);
+    if (!player) return;
+
     try {
-      gameState = GameLogic.revealTrump(gameState);
+      gameState = GameLogic.revealTrump(gameState, player.id);
       games.set(roomCode, gameState);
       broadcastGameState(roomCode, gameState);
     } catch (e) {

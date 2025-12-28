@@ -153,10 +153,13 @@ export class GameLogic {
     return state;
   }
 
-  static revealTrump(state: GameState): GameState {
+  static revealTrump(state: GameState, revealerId?: string): GameState {
     if (!state.hiddenTrumpCard || state.isTrumpRevealed) return state;
 
     state.isTrumpRevealed = true;
+    if (revealerId) {
+      state.trumpRevealerId = revealerId;
+    }
     
     // Card is already in hand, just reveal it
     // state.hands[state.trumpCallerId].push(state.hiddenTrumpCard);
@@ -187,7 +190,8 @@ export class GameLogic {
     // Validate Move
     if (state.currentTrick.length > 0) {
       const leadSuit = state.currentTrick[0].card.suit;
-      const hasLeadSuit = hand.some(c => c.suit === leadSuit);
+      // Check if player has lead suit, IGNORING the hidden trump card if it's not revealed
+      const hasLeadSuit = hand.some(c => c.suit === leadSuit && (!state.hiddenTrumpCard || state.isTrumpRevealed || c.id !== state.hiddenTrumpCard.id));
       
       if (card.suit !== leadSuit && hasLeadSuit) {
         throw new Error(`Must follow suit: ${leadSuit}`);
@@ -210,6 +214,7 @@ export class GameLogic {
          // and asks to see the trump (or plays a trump if they are the one revealing).
          // Simplified: If a player breaks suit, trump is revealed immediately if not already.
          state.isTrumpRevealed = true;
+         state.trumpRevealerId = playerId;
          state.logs.push(`Trump revealed: ${state.trumpSuit}`);
        }
     }

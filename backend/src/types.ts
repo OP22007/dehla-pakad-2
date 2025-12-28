@@ -66,6 +66,7 @@ export interface GameState {
   hiddenTrumpCard: Card | null; // New field for the blind trump card
   isTrumpRevealed: boolean;
   trumpCallerId: string;
+  trumpRevealerId?: string | null; // ID of the player who revealed the trump
   currentTurn: string; // Player ID
   teams: {
     team1: TeamState; // Players at index 0 and 2
