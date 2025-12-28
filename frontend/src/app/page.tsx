@@ -23,7 +23,7 @@ interface Room {
 }
 
 // Initialize socket outside component to prevent multiple connections
-const socket: Socket = io('http://localhost:3001', {
+const socket: Socket = io('https://dehlabackend.duckdns.org/', {
   autoConnect: false
 });
 

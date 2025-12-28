@@ -41,6 +41,7 @@ interface GameState {
   winner?: string;
   lastTrickWinner?: string | null;
   lastTrickCards?: PlayedCard[] | null;
+  hiddenTrumpCard?: Card | null;
 }
 
 interface Player {
@@ -59,6 +60,88 @@ interface GameBoardProps {
   onGetHint: () => void;
   hint: string | null;
 }
+
+const SetsHistoryModal = ({ isOpen, onClose, gameData, currentPlayerId }: { isOpen: boolean; onClose: () => void; gameData: GameState; currentPlayerId: string }) => {
+  if (!isOpen) return null;
+
+  const chunk = <T,>(arr: T[], size: number): T[][] => {
+    return Array.from({ length: Math.ceil(arr.length / size) }, (v, i) =>
+      arr.slice(i * size, i * size + size)
+    );
+  };
+
+  const team1Sets = chunk(gameData.teams.team1.wonCards, 4);
+  const team2Sets = chunk(gameData.teams.team2.wonCards, 4);
+  
+  const isTeam1 = gameData.teams.team1.players.includes(currentPlayerId);
+  const isTeam2 = gameData.teams.team2.players.includes(currentPlayerId);
+  const isSpectator = !isTeam1 && !isTeam2;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-4">
+       <div className="bg-casino-green-900 border border-gold-500/50 rounded-xl p-4 md:p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto shadow-2xl relative flex flex-col">
+          <button onClick={onClose} className="absolute top-4 right-4 text-gold-400 hover:text-white text-xl font-bold z-10">✕</button>
+          <h2 className="text-2xl md:text-3xl font-playfair text-gold-100 mb-6 text-center sticky top-0 bg-casino-green-900/95 py-2 z-10">Collected Sets</h2>
+          
+          <div className={`grid gap-8 overflow-y-auto pr-2 ${isSpectator ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 justify-items-center'}`}>
+             {/* Team 1 */}
+             {(isTeam1 || isSpectator) && (
+             <div className={`bg-black/20 rounded-lg p-4 ${!isSpectator ? 'w-full max-w-2xl' : ''}`}>
+                <div className="flex justify-between items-center mb-4 border-b border-gold-500/30 pb-2">
+                  <h3 className="text-gold-400 font-bold uppercase tracking-widest">Team 1</h3>
+                  <span className="text-gold-200 font-playfair">{gameData.teams.team1.tricksWon} Sets</span>
+                </div>
+                <div className="space-y-3">
+                   {team1Sets.length === 0 && <p className="text-gray-500 text-center italic text-sm py-4">No sets collected yet</p>}
+                   {team1Sets.map((set, i) => (
+                      <div key={i} className="bg-black/40 p-2 rounded-lg flex gap-1 justify-center items-center border border-gold-500/10">
+                         {set.map((card, idx) => (
+                           <div key={idx} className="transform scale-75 -mx-2 first:ml-0">
+                             <PlayingCard 
+                               suit={card.suit as Suit} 
+                               rank={card.rank as Rank} 
+                               isFaceUp={true} 
+                               className="shadow-md"
+                             />
+                           </div>
+                         ))}
+                      </div>
+                   ))}
+                </div>
+             </div>
+             )}
+
+             {/* Team 2 */}
+             {(isTeam2 || isSpectator) && (
+             <div className={`bg-black/20 rounded-lg p-4 ${!isSpectator ? 'w-full max-w-2xl' : ''}`}>
+                <div className="flex justify-between items-center mb-4 border-b border-gold-500/30 pb-2">
+                  <h3 className="text-gold-400 font-bold uppercase tracking-widest">Team 2</h3>
+                  <span className="text-gold-200 font-playfair">{gameData.teams.team2.tricksWon} Sets</span>
+                </div>
+                <div className="space-y-3">
+                   {team2Sets.length === 0 && <p className="text-gray-500 text-center italic text-sm py-4">No sets collected yet</p>}
+                   {team2Sets.map((set, i) => (
+                      <div key={i} className="bg-black/40 p-2 rounded-lg flex gap-1 justify-center items-center border border-gold-500/10">
+                         {set.map((card, idx) => (
+                           <div key={idx} className="transform scale-75 -mx-2 first:ml-0">
+                             <PlayingCard 
+                               suit={card.suit as Suit} 
+                               rank={card.rank as Rank} 
+                               isFaceUp={true} 
+                               className="shadow-md"
+                             />
+                           </div>
+                         ))}
+                      </div>
+                   ))}
+                </div>
+             </div>
+             )}
+          </div>
+       </div>
+    </div>
+  );
+};
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
   gameData, 
@@ -79,6 +162,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [trickAnimating, setTrickAnimating] = useState(false);
   const [timeLeft, setTimeLeft] = useState(45);
   const [isMobileLandscape, setIsMobileLandscape] = useState(false);
+  const [showSetsHistory, setShowSetsHistory] = useState(false);
 
   // Detect Mobile Landscape
   useEffect(() => {
@@ -173,18 +257,28 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const getValidCardIds = () => {
     if (!isMyTurn || gameData.status !== 'playing') return [];
     
+    let validIds = myCards.map(c => c.id);
+
+    // Exclude hidden trump card if not revealed
+    if (gameData.hiddenTrumpCard && !gameData.isTrumpRevealed) {
+      validIds = validIds.filter(id => id !== gameData.hiddenTrumpCard!.id);
+    }
+
     if (gameData.currentTrick.length === 0) {
-      return myCards.map(c => c.id);
+      return validIds;
     }
 
     const leadSuit = gameData.currentTrick[0].card.suit;
-    const hasLeadSuit = myCards.some(c => c.suit === leadSuit);
+    const hasLeadSuit = myCards.some(c => c.suit === leadSuit && (!gameData.hiddenTrumpCard || c.id !== gameData.hiddenTrumpCard.id));
 
     if (hasLeadSuit) {
-      return myCards.filter(c => c.suit === leadSuit).map(c => c.id);
+      return validIds.filter(id => {
+        const card = myCards.find(c => c.id === id);
+        return card?.suit === leadSuit;
+      });
     }
 
-    return myCards.map(c => c.id);
+    return validIds;
   };
 
   const validCardIds = getValidCardIds();
@@ -300,46 +394,72 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             </div>
           )}
 
-          {/* Trump Indicator */}
+          {/* Trump Indicator & History */}
           {isMobileLandscape ? (
-            <div className="fixed top-2 right-2 pointer-events-auto z-50">
-               {gameData.isTrumpRevealed && gameData.trumpSuit ? (
-                 <div className="w-10 h-10 bg-black/40 backdrop-blur rounded-full border border-gold-500/30 flex items-center justify-center shadow-lg">
-                    <span className={`text-2xl drop-shadow-md ${
-                      ['hearts', 'diamonds'].includes(gameData.trumpSuit) ? 'text-red-500' : 'text-white'
-                    }`}>
-                    {gameData.trumpSuit === 'spades' && '♠'}
-                    {gameData.trumpSuit === 'hearts' && '♥'}
-                    {gameData.trumpSuit === 'diamonds' && '♦'}
-                    {gameData.trumpSuit === 'clubs' && '♣'}
-                    </span>
-                 </div>
-               ) : (
-                 <div className="w-10 h-10 rounded-full border-2 border-dashed border-gold-500/30 flex items-center justify-center opacity-50 bg-black/20">
-                   <Spades className="w-4 h-4 text-gold-600" />
-                 </div>
-               )}
-            </div>
+            <>
+              {/* History Button (Mobile) */}
+              <button 
+                onClick={() => setShowSetsHistory(true)}
+                className="fixed top-2 right-14 w-10 h-10 bg-black/40 backdrop-blur rounded-full border border-gold-500/30 flex items-center justify-center shadow-lg z-50 active:scale-95 transition-transform"
+              >
+                <div className="flex flex-col gap-0.5 opacity-80">
+                  <div className="w-4 h-3 border border-gold-400 rounded-[1px] bg-gold-500/10"></div>
+                  <div className="w-4 h-3 border border-gold-400 rounded-[1px] bg-gold-500/10 -mt-2 ml-1"></div>
+                </div>
+              </button>
+
+              <div className="fixed top-2 right-2 pointer-events-auto z-50">
+                 {gameData.isTrumpRevealed && gameData.trumpSuit ? (
+                   <div className="w-10 h-10 bg-black/40 backdrop-blur rounded-full border border-gold-500/30 flex items-center justify-center shadow-lg">
+                      <span className={`text-2xl drop-shadow-md ${
+                        ['hearts', 'diamonds'].includes(gameData.trumpSuit) ? 'text-red-500' : 'text-white'
+                      }`}>
+                      {gameData.trumpSuit === 'spades' && '♠'}
+                      {gameData.trumpSuit === 'hearts' && '♥'}
+                      {gameData.trumpSuit === 'diamonds' && '♦'}
+                      {gameData.trumpSuit === 'clubs' && '♣'}
+                      </span>
+                   </div>
+                 ) : (
+                   <div className="w-10 h-10 rounded-full border-2 border-dashed border-gold-500/30 flex items-center justify-center opacity-50 bg-black/20">
+                     <Spades className="w-4 h-4 text-gold-600" />
+                   </div>
+                 )}
+              </div>
+            </>
           ) : (
-            <div className="bg-black/40 px-3 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl border border-gold-500/30 backdrop-blur-md pointer-events-auto shadow-lg flex flex-col items-center min-w-16 md:min-w-25">
-               <span className="text-gold-400 text-[8px] md:text-[10px] uppercase tracking-[0.2em] mb-1 md:mb-2">Trump</span>
-               {gameData.isTrumpRevealed && gameData.trumpSuit ? (
-                 <div className="text-gold-100 font-bold capitalize flex items-center justify-center animate-pop-in">
-                    {/* Large Suit Icon */}
-                    <span className={`text-2xl md:text-4xl drop-shadow-lg ${
-                      ['hearts', 'diamonds'].includes(gameData.trumpSuit) ? 'text-red-500' : 'text-white'
-                    }`}>
-                    {gameData.trumpSuit === 'spades' && '♠'}
-                    {gameData.trumpSuit === 'hearts' && '♥'}
-                    {gameData.trumpSuit === 'diamonds' && '♦'}
-                    {gameData.trumpSuit === 'clubs' && '♣'}
-                    </span>
-                 </div>
-               ) : (
-                 <div className="w-6 h-6 md:w-10 md:h-10 rounded-full border-2 border-dashed border-gold-500/30 flex items-center justify-center opacity-50">
-                   <Spades className="w-3 h-3 md:w-4 md:h-4 text-gold-600" />
-                 </div>
-               )}
+            <div className="flex gap-4 items-start pointer-events-auto">
+              <button 
+                onClick={() => setShowSetsHistory(true)}
+                className="bg-black/40 px-4 py-2 rounded-lg border border-gold-500/30 backdrop-blur-md hover:bg-black/60 transition-colors flex flex-col items-center gap-1 group h-full justify-center shadow-lg"
+              >
+                <div className="flex flex-col gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                  <div className="w-5 h-3 border border-gold-400 rounded-[1px] bg-gold-500/10"></div>
+                  <div className="w-5 h-3 border border-gold-400 rounded-[1px] bg-gold-500/10 -mt-2 ml-1"></div>
+                </div>
+                <span className="text-[8px] md:text-[10px] text-gold-400 uppercase tracking-widest">Sets</span>
+              </button>
+
+              <div className="bg-black/40 px-3 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl border border-gold-500/30 backdrop-blur-md shadow-lg flex flex-col items-center min-w-16 md:min-w-25">
+                 <span className="text-gold-400 text-[8px] md:text-[10px] uppercase tracking-[0.2em] mb-1 md:mb-2">Trump</span>
+                 {gameData.isTrumpRevealed && gameData.trumpSuit ? (
+                   <div className="text-gold-100 font-bold capitalize flex items-center justify-center animate-pop-in">
+                      {/* Large Suit Icon */}
+                      <span className={`text-2xl md:text-4xl drop-shadow-lg ${
+                        ['hearts', 'diamonds'].includes(gameData.trumpSuit) ? 'text-red-500' : 'text-white'
+                      }`}>
+                      {gameData.trumpSuit === 'spades' && '♠'}
+                      {gameData.trumpSuit === 'hearts' && '♥'}
+                      {gameData.trumpSuit === 'diamonds' && '♦'}
+                      {gameData.trumpSuit === 'clubs' && '♣'}
+                      </span>
+                   </div>
+                 ) : (
+                   <div className="w-6 h-6 md:w-10 md:h-10 rounded-full border-2 border-dashed border-gold-500/30 flex items-center justify-center opacity-50">
+                     <Spades className="w-3 h-3 md:w-4 md:h-4 text-gold-600" />
+                   </div>
+                 )}
+              </div>
             </div>
           )}
         </div>
@@ -499,6 +619,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                  shakingCardId={shakingCardId}
                  isActive={isMyTurn}
                  layout={isMobileLandscape ? 'scroll' : 'fan'}
+                 hiddenTrumpCardId={gameData.hiddenTrumpCard?.id}
                />
             </div>
             
@@ -542,12 +663,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
               {/* Back (Hidden) */}
               <div className="absolute inset-0 backface-hidden rotate-y-180 bg-casino-green-800 rounded-sm md:rounded-md flex items-center justify-center border-2 border-gold-600 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDIwIDIwIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmQiIHN0cm9rZS13aWR0aD0iMSI+PHBhdGggZD0iTTAgMGwyMCAyME0yMCAwbC0yMCAyMCIvPjwvc3ZnPg==')]">
-              <div className="bg-black/60 px-1 py-0.5 md:px-2 md:py-1 rounded backdrop-blur-sm border border-gold-500/30">
-                <span className="text-gold-400 font-bold text-[8px] md:text-[10px] tracking-widest uppercase">Trump</span>
+                <div className="bg-black/60 px-1 py-0.5 md:px-2 md:py-1 rounded backdrop-blur-sm border border-gold-500/30">
+                  <span className="text-gold-400 font-bold text-[8px] md:text-[10px] tracking-widest uppercase">Trump</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
         )}
 
         {/* Call Trump Button */}
@@ -704,6 +825,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       {/* Orientation Prompt (Mobile Landscape) */}
       {isMobileLandscape && (
         <OrientationPrompt />
+      )}
+
+      {/* Sets History Modal */}
+      {gameData && (
+        <SetsHistoryModal 
+          isOpen={showSetsHistory} 
+          onClose={() => setShowSetsHistory(false)} 
+          gameData={gameData} 
+          currentPlayerId={currentPlayerId}
+        />
       )}
     </div>
   );

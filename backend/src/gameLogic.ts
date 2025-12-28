@@ -140,8 +140,8 @@ export class GameLogic {
     
     const selectedTrumpCard = hand[cardIndex];
     
-    // Remove card from hand
-    state.hands[state.trumpCallerId] = hand.filter(c => c.id !== cardId);
+    // Keep card in hand but mark it as hidden trump
+    // state.hands[state.trumpCallerId] = hand.filter(c => c.id !== cardId);
     
     // Set hidden trump state
     state.hiddenTrumpCard = selectedTrumpCard;
@@ -158,10 +158,10 @@ export class GameLogic {
 
     state.isTrumpRevealed = true;
     
-    // Add the hidden card back to the caller's hand
-    state.hands[state.trumpCallerId].push(state.hiddenTrumpCard);
+    // Card is already in hand, just reveal it
+    // state.hands[state.trumpCallerId].push(state.hiddenTrumpCard);
     
-    state.logs.push(`Trump revealed! It is ${state.hiddenTrumpCard.suit} (${state.hiddenTrumpCard.rank}). Card returned to caller.`);
+    state.logs.push(`Trump revealed! It is ${state.hiddenTrumpCard.suit} (${state.hiddenTrumpCard.rank}).`);
     
     // Clear the hidden card reference (optional, but good for cleanup, though we might want to keep it for history)
     // state.hiddenTrumpCard = null; 
@@ -172,6 +172,11 @@ export class GameLogic {
   static playCard(state: GameState, playerId: string, cardId: string): GameState {
     if (state.status !== 'playing') throw new Error("Game not in playing state");
     if (state.currentTurn !== playerId) throw new Error("Not your turn");
+
+    // Check if trying to play hidden trump
+    if (state.hiddenTrumpCard && cardId === state.hiddenTrumpCard.id && !state.isTrumpRevealed) {
+      throw new Error("Cannot play the hidden trump card until it is revealed");
+    }
 
     const hand = state.hands[playerId];
     const cardIndex = hand.findIndex(c => c.id === cardId);

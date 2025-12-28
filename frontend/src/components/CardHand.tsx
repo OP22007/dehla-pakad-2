@@ -17,6 +17,7 @@ interface CardHandProps {
   className?: string;
   isActive?: boolean;
   layout?: 'fan' | 'scroll'; // New prop for layout mode
+  hiddenTrumpCardId?: string | null;
 }
 
 export const CardHand: React.FC<CardHandProps> = ({
@@ -28,7 +29,8 @@ export const CardHand: React.FC<CardHandProps> = ({
   isFaceUp = true,
   className = '',
   isActive = true,
-  layout = 'fan'
+  layout = 'fan',
+  hiddenTrumpCardId
 }) => {
   const totalCards = cards.length;
 
@@ -44,12 +46,13 @@ export const CardHand: React.FC<CardHandProps> = ({
           const isSelected = card.id === selectedCardId;
           const isValid = isActive && validCardIds ? validCardIds.includes(card.id) : true;
           const isShaking = card.id === shakingCardId;
+          const isHiddenTrump = card.id === hiddenTrumpCardId;
 
           return (
             <div
               key={card.id}
               className={`
-                flex-shrink-0 snap-center transition-all duration-300
+                flex-shrink-0 snap-center transition-all duration-300 relative
                 ${isSelected ? '-translate-y-4 z-20' : 'z-10'}
               `}
               style={{ 
@@ -67,6 +70,11 @@ export const CardHand: React.FC<CardHandProps> = ({
                 onClick={() => onCardClick && onCardClick(card.id)}
                 className="shadow-md" // Compact size handled by PlayingCard responsive classes
               />
+              {isHiddenTrump && (
+                <div className="absolute -top-2 right-0 bg-black/80 text-gold-400 text-[8px] font-bold px-1.5 py-0.5 rounded border border-gold-500/50 z-30 shadow-lg animate-pulse">
+                  TRUMP
+                </div>
+              )}
             </div>
           );
         })}
@@ -93,6 +101,7 @@ export const CardHand: React.FC<CardHandProps> = ({
         // Only apply validation styling if it's the player's turn
         const isValid = isActive && validCardIds ? validCardIds.includes(card.id) : true;
         const isShaking = card.id === shakingCardId;
+        const isHiddenTrump = card.id === hiddenTrumpCardId;
         
         // Secondary Cue: Lift cards slightly if active
         const activeLift = isActive ? -8 : 0; 
@@ -122,6 +131,11 @@ export const CardHand: React.FC<CardHandProps> = ({
               onClick={() => onCardClick && onCardClick(card.id)}
               className="shadow-xl hover:shadow-2xl"
             />
+            {isHiddenTrump && (
+              <div className="absolute -top-3 right-0 bg-black/80 text-gold-400 text-[8px] font-bold px-1.5 py-0.5 rounded border border-gold-500/50 z-30 shadow-lg animate-pulse rotate-0" style={{ transform: `rotate(${-angle}deg)` }}>
+                TRUMP
+              </div>
+            )}
           </div>
         );
       })}
