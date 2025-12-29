@@ -684,7 +684,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                  {/* Show back of cards */}
                <div className="flex -space-x-16">
                  {gameData.hands[partnerId]?.map((_, i) => (
-                   <div key={i} className={`bg-casino-green-800 rounded-md sm:rounded-lg border-2 border-gold-600 shadow-lg transform hover:-translate-y-2 transition-transform ${isMobileLandscape ? 'w-12 h-18' : 'w-16 h-24 sm:w-20 sm:h-28 lg:w-24 lg:h-36'}`}>
+                   <div key={i} className={`bg-casino-green-800 rounded-md sm:rounded-lg border-2 border-gold-600 shadow-lg transform hover:-translate-y-2 transition-transform ${isMobileLandscape ? 'w-12 h-18' : 'w-16 h-24 sm:w-20 sm:h-28 lg:w-24 lg:h-28'}`}>
                       <div className="w-full h-full opacity-40 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDIwIDIwIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmQiIHN0cm9rZS13aWR0aD0iMSI+PHBhdGggZD0iTTAgMGwyMCAyME0yMCAwbC0yMCAyMCIvPjwvc3ZnPg==')]"></div>
                    </div>
                  ))}
