@@ -36,11 +36,11 @@ export const PlayerNameplate: React.FC<PlayerNameplateProps> = ({
 
         <div className={`
           relative flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all duration-300 z-10
-          ${isActive ? 'bg-black/60 border border-gold-500/50 shadow-[0_0_15px_rgba(212,175,55,0.2)]' : 'bg-black/30 border border-transparent opacity-80'}
+          ${isActive ? 'bg-black/80 border border-gold-500/80 shadow-[0_0_15px_rgba(212,175,55,0.4)]' : 'bg-black/40 border border-transparent opacity-80'}
         `}>
           {/* Name */}
           <span className={`
-            font-playfair font-bold text-xs tracking-wider truncate max-w-20 text-center
+            font-playfair font-bold text-xs tracking-wider truncate max-w-20 text-center drop-shadow-md
             ${isActive ? 'text-gold-100' : 'text-gold-400'}
           `}>
             {name}
@@ -75,57 +75,46 @@ export const PlayerNameplate: React.FC<PlayerNameplateProps> = ({
 
       {/* Timer Badge */}
       {isActive && timeLeft !== undefined && (
-        <div className="absolute -top-3 -right-3 z-20 bg-red-600 text-white text-xs font-bold w-8 h-8 rounded-full flex items-center justify-center border-2 border-gold-400 shadow-lg animate-pulse">
+        <div className="absolute -top-2 -right-2 md:-top-3 md:-right-3 z-20 bg-red-600 text-white text-[10px] md:text-xs font-bold w-5 h-5 md:w-8 md:h-8 rounded-full flex items-center justify-center border md:border-2 border-gold-400 shadow-lg animate-pulse">
           {timeLeft}
         </div>
       )}
 
       <div className={`
-        relative flex items-center gap-3 px-3 py-2 md:px-4 md:py-3 rounded-lg transition-all duration-500 z-10
-        wood-panel min-w-35 md:min-w-45
+        relative flex items-center gap-1.5 md:gap-3 px-2 py-1 md:px-4 md:py-3 rounded-lg transition-all duration-500 z-10
+        wood-panel min-w-20 md:min-w-45
         ${isActive ? 'scale-105 ring-2 ring-gold-400 ring-offset-2 ring-offset-transparent shadow-[0_0_20px_rgba(212,175,55,0.3)]' : 'opacity-90 grayscale-[0.3]'}
       `}>
         {/* Avatar Circle */}
         <div className="relative">
         <div className={`
-          w-10 h-10 md:w-14 md:h-14 rounded-full border-2 overflow-hidden bg-casino-green-900 shadow-inner
+          w-6 h-6 md:w-14 md:h-14 rounded-full border-2 overflow-hidden bg-casino-green-900 shadow-inner
           ${isActive ? 'border-gold-300' : 'border-gold-700'}
         `}>
           {avatarUrl ? (
             <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gold-200 font-playfair text-lg md:text-2xl bg-linear-to-br from-casino-green-800 to-black">
+            <div className="w-full h-full flex items-center justify-center text-gold-200 font-playfair text-xs md:text-2xl bg-linear-to-br from-casino-green-800 to-black">
               {name.charAt(0)}
             </div>
           )}
         </div>
-        
-        {isDealer && (
-          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gold-gradient rounded-full flex items-center justify-center border border-black text-[10px] font-bold text-black shadow-md z-10">
-            D
-          </div>
-        )}
-      </div>
+        </div>
 
-      {/* Info */}
-      <div className="flex flex-col grow">
-        <span className={`
-          font-playfair font-bold text-sm md:text-base tracking-wider truncate max-w-20 md:max-w-25
-          ${isActive ? 'text-gold-100 drop-shadow-md' : 'text-gold-400'}
-        `}>
-          {name}
-        </span>
-        {team && (
-          <span className="font-inter text-[10px] uppercase tracking-widest text-gold-600 mt-1">
-            {team}
+        {/* Info */}
+        <div className="flex flex-col">
+          <span className={`
+            font-playfair font-bold tracking-wider truncate max-w-16 md:max-w-32
+            ${isActive ? 'text-gold-100 text-[10px] md:text-lg drop-shadow-md' : 'text-gold-400 text-[8px] md:text-base'}
+          `}>
+            {name}
           </span>
-        )}
-      </div>
-
-      {/* Active Glow Overlay */}
-      {isActive && (
-        <div className="absolute inset-0 rounded-lg bg-gold-400/5 pointer-events-none animate-pulse" />
-      )}
+          {team && (
+            <span className="font-inter text-[6px] md:text-[10px] uppercase tracking-widest text-gold-600/80">
+              {team}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

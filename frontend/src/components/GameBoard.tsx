@@ -60,6 +60,7 @@ interface GameBoardProps {
   onSetTrump: (cardId: string) => void;
   onRevealTrump: () => void;
   onGetHint: () => void;
+  onForfeit: () => void;
   hint: string | null;
 }
 
@@ -83,9 +84,9 @@ const SetsHistoryModal = ({ isOpen, onClose, gameData, currentPlayerId }: { isOp
   const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-height: 500px) and (orientation: landscape)').matches;
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-2 md:p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-2 md:p-4">
        <div className={`bg-casino-green-900 border border-gold-500/50 rounded-xl shadow-2xl relative flex flex-col ${isMobile ? 'p-2 w-full max-w-lg max-h-[90vh]' : 'p-4 md:p-6 w-full max-w-4xl max-h-[80vh]'} overflow-y-auto`}>
-          <button onClick={onClose} className={`absolute text-gold-400 hover:text-white font-bold z-10 ${isMobile ? 'top-2 right-2 text-lg' : 'top-4 right-4 text-xl'}`}>✕</button>
+          <button onClick={onClose} className={`absolute text-gold-400 hover:text-white font-bold z-50 ${isMobile ? 'top-2 right-2 text-lg' : 'top-4 right-4 text-xl'}`}>✕</button>
           <h2 className={`font-playfair text-gold-100 text-center sticky top-0 bg-casino-green-900/95 z-10 ${isMobile ? 'text-lg mb-2 py-1' : 'text-2xl md:text-3xl mb-6 py-2'}`}>Collected Sets</h2>
           
           <div className={`grid overflow-y-auto pr-2 ${isMobile ? 'gap-3 grid-cols-1' : `gap-8 ${isSpectator ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 justify-items-center'}`}`}>
@@ -158,6 +159,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onSetTrump,
   onRevealTrump,
   onGetHint,
+  onForfeit,
   hint
 }) => {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
@@ -390,6 +392,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     return p ? p.name : "Unknown";
   };
 
+  // Check for forfeit condition (4 tens collected by one team)
+  const isTeam1 = gameData.teams.team1.players.includes(currentPlayerId);
+  const myTeam = isTeam1 ? gameData.teams.team1 : gameData.teams.team2;
+  const otherTeam = isTeam1 ? gameData.teams.team2 : gameData.teams.team1;
+  const canForfeit = otherTeam.tensCollected === 4 && gameData.status === 'playing';
+
   return (
     <div className={`relative w-full h-screen bg-casino-green-900 overflow-hidden select-none font-sans flex flex-col ${isMobileLandscape ? 'mobile-landscape-game' : ''}`}>
       <OrientationPrompt />
@@ -413,6 +421,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               >
                 Restart
               </button>
+              {canForfeit && (
+                <button 
+                  onClick={onForfeit}
+                  className="text-red-400 hover:text-red-200 font-playfair text-xs md:text-sm bg-red-900/40 px-4 py-1.5 md:px-6 md:py-2 rounded-full backdrop-blur-md border border-red-500/30 transition-all hover:border-red-400 shadow-lg animate-pulse"
+                >
+                  Forfeit
+                </button>
+              )}
             </div>
           )}
           
@@ -420,51 +436,59 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           {isMobileLandscape && (
             <div className="fixed top-0 left-0 right-0 flex justify-between items-center px-2 py-1.5 pointer-events-auto z-50 bg-linear-to-b from-black/70 to-transparent">
               {/* Left: Exit/Restart buttons */}
-              <div className="flex gap-1.5">
+              <div className="flex gap-1.5 opacity-60 hover:opacity-100 transition-opacity">
                 <button 
                   onClick={onLeaveGame}
-                  className="bg-black/50 px-2.5 py-1 rounded-md border border-gold-500/40 text-[10px] text-gold-400 hover:bg-black/70 transition-colors font-semibold"
+                  className="bg-black/50 px-2 py-0.5 rounded-md border border-gold-500/40 text-[9px] text-gold-400 hover:bg-black/70 transition-colors font-semibold"
                 >
                   Exit
                 </button>
                 <button 
                   onClick={onPlayAgain}
-                  className="bg-black/50 px-2.5 py-1 rounded-md border border-gold-500/40 text-[10px] text-gold-400 hover:bg-black/70 transition-colors font-semibold"
+                  className="bg-black/50 px-2 py-0.5 rounded-md border border-gold-500/40 text-[9px] text-gold-400 hover:bg-black/70 transition-colors font-semibold"
                 >
                   Restart
                 </button>
+                {canForfeit && (
+                  <button 
+                    onClick={onForfeit}
+                    className="bg-red-900/80 px-2 py-0.5 rounded-md border border-red-500/40 text-[9px] text-red-200 hover:bg-red-800 transition-colors font-semibold animate-pulse"
+                  >
+                    Forfeit
+                  </button>
+                )}
               </div>
 
-              {/* Center: Scoreboard */}
-              <div className="flex items-center gap-3 bg-black/60 backdrop-blur-sm rounded-lg px-4 py-1.5 border border-gold-500/30 shadow-lg">
-                {/* Team 1 */}
-                <div className="flex flex-col items-center min-w-12">
-                  <span className="text-gold-500 text-[8px] font-bold uppercase tracking-wider">Team 1</span>
-                  <div className="flex items-baseline gap-1">
-                    <span className={`text-gold-100 font-playfair text-xl font-bold leading-none ${scoreAnimating === 'team1' ? 'animate-score-update' : ''}`}>
-                      {gameData.teams.team1.tricksWon}
-                    </span>
-                    <span className="text-gold-400 text-[8px]">({gameData.teams.team1.tensCollected} 10s)</span>
-                  </div>
-                </div>
-                
-                {/* Divider */}
-                <div className="w-px bg-gold-500/40 h-6" />
-                
-                {/* Team 2 */}
-                <div className="flex flex-col items-center min-w-12">
-                  <span className="text-gold-500 text-[8px] font-bold uppercase tracking-wider">Team 2</span>
-                  <div className="flex items-baseline gap-1">
-                    <span className={`text-gold-100 font-playfair text-xl font-bold leading-none ${scoreAnimating === 'team2' ? 'animate-score-update' : ''}`}>
-                      {gameData.teams.team2.tricksWon}
-                    </span>
-                    <span className="text-gold-400 text-[8px]">({gameData.teams.team2.tensCollected} 10s)</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right: Sets + Trump */}
+              {/* Right Group: Scoreboard + Sets + Trump */}
               <div className="flex items-center gap-2">
+                {/* Scoreboard */}
+                <div className="flex items-center gap-3 bg-black/60 backdrop-blur-sm rounded-lg px-4 py-1.5 border border-gold-500/30 shadow-lg">
+                  {/* Team 1 */}
+                  <div className="flex flex-col items-center min-w-12">
+                    <span className="text-gold-500 text-[8px] font-bold uppercase tracking-wider">Team 1</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className={`text-gold-100 font-playfair text-xl font-bold leading-none ${scoreAnimating === 'team1' ? 'animate-score-update' : ''}`}>
+                        {gameData.teams.team1.tricksWon}
+                      </span>
+                      <span className="text-gold-400 text-[8px]">({gameData.teams.team1.tensCollected} 10s)</span>
+                    </div>
+                  </div>
+                  
+                  {/* Divider */}
+                  <div className="w-px bg-gold-500/40 h-6" />
+                  
+                  {/* Team 2 */}
+                  <div className="flex flex-col items-center min-w-12">
+                    <span className="text-gold-500 text-[8px] font-bold uppercase tracking-wider">Team 2</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className={`text-gold-100 font-playfair text-xl font-bold leading-none ${scoreAnimating === 'team2' ? 'animate-score-update' : ''}`}>
+                        {gameData.teams.team2.tricksWon}
+                      </span>
+                      <span className="text-gold-400 text-[8px]">({gameData.teams.team2.tensCollected} 10s)</span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Sets Button */}
                 <button 
                   onClick={() => setShowSetsHistory(true)}
@@ -563,20 +587,28 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
 
         {/* Game Area */}
-        <div className={`flex-1 relative perspective-1000 flex items-center justify-center ${isMobileLandscape ? 'pt-10' : ''}`}>
+        <div className={`flex-1 relative perspective-1000 flex items-center justify-center ${isMobileLandscape ? 'pt-2' : ''}`}>
           
           {/* Center Trick Area */}
           <div className={`
             absolute rounded-full border-2 border-dashed border-gold-500/10 flex items-center justify-center bg-black/20 shadow-[inset_0_0_60px_rgba(0,0,0,0.4)]
-            ${isMobileLandscape ? 'w-28 h-28' : 'w-72 h-72 -translate-y-12'}
+            ${isMobileLandscape ? 'w-28 h-28 -translate-y-6' : 'w-72 h-72 -translate-y-12'}
           `}>
             {/* Inner stitching ring */}
             <div className="absolute inset-2 rounded-full border border-gold-500/10 border-dashed opacity-60" />
             
-            {/* Vignette for Mobile Landscape */}
-            {isMobileLandscape && (
-              <div className="fixed inset-0 bg-radial-transparent-black pointer-events-none z-[-1]" style={{ background: 'radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.6) 100%)' }} />
-            )}
+            {/* Subtle felt pattern for center */}
+            <div className="absolute inset-0 rounded-full opacity-30 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')]"></div>
+
+            {/* Dealer Chip / Logo Watermark */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
+              <div className={`rounded-full border-2 border-gold-500/30 flex items-center justify-center ${isMobileLandscape ? 'w-16 h-16' : 'w-32 h-32'}`}>
+                  <span className={`font-playfair text-gold-500 font-bold ${isMobileLandscape ? 'text-xs' : 'text-2xl'}`}>DEHLA</span>
+              </div>
+            </div>
+            
+            {/* Vignette for All Screens - Removed as per request to remove square */}
+            {/* <div className="fixed inset-0 bg-radial-transparent-black pointer-events-none z-[-1]" style={{ background: 'radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.6) 100%)' }} /> */}
             
             {gameData.currentTrick.map((played, index) => {
                const rotation = getCardRotation(played.playerId);
@@ -590,7 +622,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   className="absolute transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1)"
                   style={{ 
                     transform: `translate(${pos.x * mobileScale}px, ${pos.y * mobileScale}px) rotate(${rotation + (Math.random() * 4 - 2)}deg) scale(${isMobileLandscape ? 0.4 : 1})`, // Add slight randomness
-                    zIndex: index
+                    zIndex: 20 + index
                   }}
                 >
                   <PlayingCard 
@@ -640,13 +672,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           {/* Player: North (Partner) */}
           {partnerId && (
-            <div className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center transition-all duration-300 ${isMobileLandscape ? 'top-12 gap-1' : 'top-2 gap-4'}`}>
+            <div className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center transition-all duration-300 ${isMobileLandscape ? 'top-3 gap-1' : 'top-2 gap-4'}`}>
               <PlayerNameplate 
                 name={getPlayerName(partnerId)} 
                 team={getTeamName(partnerId)} 
                 isActive={gameData.currentTurn === partnerId} 
                 timeLeft={gameData.currentTurn === partnerId ? timeLeft : undefined}
-                variant={isMobileLandscape ? 'minimal' : 'standard'}
+                variant="standard"
               />
               <div className={`origin-top opacity-90 ${isMobileLandscape ? 'scale-50 -mt-3' : 'scale-75'}`}>
                  {/* Show back of cards */}
@@ -663,13 +695,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           {/* Player: West (Left Opponent) */}
           {leftOpponentId && (
-            <div className={`absolute top-1/2 -translate-y-1/2 flex items-center -rotate-90 origin-center transition-all duration-300 ${isMobileLandscape ? 'left-6 gap-1' : 'left-12 gap-4 flex-col'}`}>
+            <div className={`absolute top-1/2 -translate-y-1/2 flex items-center -rotate-90 origin-center transition-all duration-300 ${isMobileLandscape ? 'left-16 gap-1 flex-col' : 'left-12 gap-4 flex-col'}`}>
               <PlayerNameplate 
                 name={getPlayerName(leftOpponentId)} 
                 team={getTeamName(leftOpponentId)} 
                 isActive={gameData.currentTurn === leftOpponentId} 
                 timeLeft={gameData.currentTurn === leftOpponentId ? timeLeft : undefined}
-                variant={isMobileLandscape ? 'minimal' : 'standard'}
+                variant="standard"
               />
                <div className={`origin-center opacity-90 ${isMobileLandscape ? 'scale-50' : 'scale-75 mt-4'}`}>
                  <div className="flex -space-x-16">
@@ -685,13 +717,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           {/* Player: East (Right Opponent) */}
           {rightOpponentId && (
-            <div className={`absolute top-1/2 -translate-y-1/2 flex items-center rotate-90 origin-center transition-all duration-300 ${isMobileLandscape ? 'right-6 gap-1' : 'right-12 gap-4 flex-col'}`}>
+            <div className={`absolute top-1/2 -translate-y-1/2 flex items-center rotate-90 origin-center transition-all duration-300 ${isMobileLandscape ? 'right-12 gap-1 flex-col' : 'right-12 gap-4 flex-col'}`}>
               <PlayerNameplate 
                 name={getPlayerName(rightOpponentId)} 
                 team={getTeamName(rightOpponentId)} 
                 isActive={gameData.currentTurn === rightOpponentId} 
                 timeLeft={gameData.currentTurn === rightOpponentId ? timeLeft : undefined}
-                variant={isMobileLandscape ? 'minimal' : 'standard'}
+                variant="standard"
               />
                <div className={`origin-center opacity-90 ${isMobileLandscape ? 'scale-50' : 'scale-75 mt-4'}`}>
                  <div className="flex -space-x-16">
@@ -706,7 +738,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           )}
 
           {/* Player: South (Me) */}
-          <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center transition-all duration-300 ${isMobileLandscape ? 'w-[85%] pb-0 gap-0' : 'w-full max-w-5xl pb-4 gap-4'}`}>
+          <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center transition-all duration-300 ${isMobileLandscape ? 'w-[85%] pb-3 gap-0' : 'w-full max-w-5xl pb-4 gap-4'}`}>
             {/* My Hand */}
             <div className={`relative w-full flex justify-center items-end perspective-1000 z-10 transition-all duration-500 ${isMobileLandscape ? 'h-28' : 'h-56'} ${!isMyTurn ? 'opacity-70 grayscale-30 pointer-events-none' : ''}`}>
                <CardHand 
@@ -729,7 +761,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                  team={getTeamName(currentPlayerId)} 
                  isActive={isMyTurn} 
                  timeLeft={isMyTurn ? timeLeft : undefined}
-                 variant={isMobileLandscape ? 'minimal' : 'standard'}
+                 variant="standard"
                />
                {isMyTurn && (
                  <div className={`absolute left-1/2 -translate-x-1/2 bg-gold-500 text-black font-bold rounded-full animate-pulse shadow-[0_0_15px_rgba(255,215,0,0.8)] whitespace-nowrap ${isMobileLandscape ? '-top-6 text-[9px] px-2 py-0.5' : '-top-12 px-4 py-1'}`}>
@@ -776,7 +808,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         )}
 
         {/* Call Trump Button */}
-        <div className={`flex items-end pointer-events-auto ${isMobileLandscape ? 'gap-1.5 fixed bottom-14 right-2 flex-col z-40' : 'gap-2 md:gap-4'}`}>
+        <div className={`flex items-end pointer-events-auto ${isMobileLandscape ? 'gap-4 fixed bottom-4 right-4 flex-row z-50 items-center' : 'gap-2 md:gap-4'}`}>
           {/* Ask Ishara Button */}
           <button
             onClick={onGetHint}
@@ -784,7 +816,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             className={`
               rounded-full border-2 flex items-center justify-center
               transform transition-all duration-300 group relative
-              ${isMobileLandscape ? 'w-8 h-8' : 'w-10 h-10 md:w-16 md:h-16'}
+              ${isMobileLandscape ? 'w-12 h-12' : 'w-10 h-10 md:w-16 md:h-16'}
               ${isMyTurn && gameData.status === 'playing'
                 ? 'bg-purple-900/80 border-purple-400 shadow-[0_0_20px_rgba(147,51,234,0.5)] hover:scale-110 hover:bg-purple-800 cursor-pointer' 
                 : 'bg-gray-800 border-gray-600 opacity-50 cursor-not-allowed grayscale'}
@@ -792,7 +824,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           >
             <div className="flex flex-col items-center">
               <span className={`${isMobileLandscape ? 'text-sm' : 'text-lg md:text-2xl'}`}>🔮</span>
-              {!isMobileLandscape && <span className="text-[6px] md:text-[8px] text-purple-200 font-bold uppercase tracking-wider mt-0.5 md:mt-1">Ishara</span>}
+              <span className={`text-purple-200 font-bold uppercase tracking-wider mt-0.5 md:mt-1 ${isMobileLandscape ? 'text-[6px]' : 'text-[6px] md:text-[8px]'}`}>Ishara</span>
             </div>
             
             {/* Tooltip */}
@@ -807,19 +839,19 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             className={`
               rounded-full border-2 md:border-4 flex items-center justify-center
               transform transition-all duration-300
-              ${isMobileLandscape ? 'w-12 h-12' : 'w-16 h-16 md:w-24 md:h-24'}
-              ${canCallTrump 
+              ${isMobileLandscape ? 'w-16 h-16' : 'w-16 h-16 md:w-24 md:h-24'}
+              ${canCallTrump  
                 ? 'bg-gold-gradient border-gold-200 shadow-[0_0_60px_rgba(255,215,0,0.9),inset_0_0_20px_rgba(255,255,255,0.5)] hover:scale-110 active:scale-95 animate-pulse-slow cursor-pointer ring-4 ring-gold-400/80 hover:shadow-[0_0_100px_rgba(255,215,0,1)]' 
                 : 'bg-gray-900/80 border-gray-500 cursor-not-allowed backdrop-blur-sm'}
             `}
           >
             <div className={`
               rounded-full border-2 flex items-center justify-center flex-col
-              ${isMobileLandscape ? 'w-10 h-10' : 'w-14 h-14 md:w-20 md:h-20'}
+              ${isMobileLandscape ? 'w-14 h-14' : 'w-14 h-14 md:w-20 md:h-20'}
               ${canCallTrump ? 'border-casino-green-900/50 bg-white/10 backdrop-blur-sm' : 'border-gray-500/30'}
             `}>
-              <span className={`font-bold tracking-widest drop-shadow-md ${isMobileLandscape ? 'text-[6px]' : 'text-[8px] md:text-xs'} ${canCallTrump ? 'text-casino-green-950' : 'text-gray-300'}`}>CALL</span>
-              <span className={`font-bold tracking-widest drop-shadow-md ${isMobileLandscape ? 'text-[6px]' : 'text-[8px] md:text-xs'} ${canCallTrump ? 'text-casino-green-950' : 'text-gray-300'}`}>TRUMP</span>
+              <span className={`font-bold tracking-widest drop-shadow-md ${isMobileLandscape ? 'text-[9px]' : 'text-[8px] md:text-xs'} ${canCallTrump ? 'text-casino-green-950' : 'text-gray-300'}`}>CALL</span>
+              <span className={`font-bold tracking-widest drop-shadow-md ${isMobileLandscape ? 'text-[9px]' : 'text-[8px] md:text-xs'} ${canCallTrump ? 'text-casino-green-950' : 'text-gray-300'}`}>TRUMP</span>
             </div>
             {/* Shine Effect */}
             {canCallTrump && (

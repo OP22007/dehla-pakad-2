@@ -43,7 +43,7 @@ export const CardHand: React.FC<CardHandProps> = ({
       <div className={`
         flex overflow-x-auto overflow-y-visible px-2 gap-[-20px] snap-x snap-mandatory w-full items-end
         scrollbar-hide mask-linear-fade pb-1
-        ${isMobileLandscape ? 'h-24 py-1' : 'h-40 py-4'}
+        ${isMobileLandscape ? 'h-24 py-1 justify-center' : 'h-40 py-4'}
         ${className} 
         ${!isActive ? 'opacity-60' : ''}
       `}>
@@ -53,6 +53,14 @@ export const CardHand: React.FC<CardHandProps> = ({
           const isShaking = card.id === shakingCardId;
           const isHiddenTrump = card.id === hiddenTrumpCardId;
           const cardIsFaceUp = isHiddenTrump && !isTrumpRevealed ? false : isFaceUp;
+          
+          // Calculate arc for mobile landscape
+          const total = cards.length;
+          const center = (total - 1) / 2;
+          const dist = Math.abs(index - center);
+          // Removed angle and y-offset for straight line in mobile landscape
+          const yOffset = 0;
+          const rotate = 0;
 
           return (
             <div
@@ -62,8 +70,9 @@ export const CardHand: React.FC<CardHandProps> = ({
                 ${isSelected ? '-translate-y-3 z-20' : 'z-10'}
               `}
               style={{ 
-                marginLeft: index === 0 ? 0 : isMobileLandscape ? '-24px' : '-30px', // More overlap on mobile
-                zIndex: isSelected ? 50 : index 
+                marginLeft: index === 0 ? 0 : isMobileLandscape ? '-28px' : '-30px', // More overlap on mobile
+                zIndex: isSelected ? 50 : index,
+                transform: undefined // Removed transform for straight line
               }}
             >
               <PlayingCard

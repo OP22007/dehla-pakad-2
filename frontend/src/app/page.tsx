@@ -66,7 +66,7 @@ export default function Home() {
 
     socket.on('error', (err: { message: string }) => {
       setError(err.message);
-      setTimeout(() => setError(null), 3000);
+      // setTimeout(() => setError(null), 3000); // Handled by useEffect now
     });
 
     return () => {
@@ -78,6 +78,14 @@ export default function Home() {
       socket.off('error');
     };
   }, []);
+
+  // Auto-dismiss error after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const handleCreateGame = (playerName: string) => {
     socket.connect();
@@ -140,6 +148,12 @@ export default function Home() {
     socket.emit('request_hint');
   };
 
+  const handleForfeit = () => {
+    if (confirm("Are you sure you want to forfeit? This will end the game and the other team will win.")) {
+      socket.emit('forfeit_game');
+    }
+  };
+
   const handlePlayAgain = () => {
     socket.emit('play_again', (response: any) => {
       if (response.error) {
@@ -185,6 +199,7 @@ export default function Home() {
           onSetTrump={handleSetTrump}
           onRevealTrump={handleRevealTrump}
           onGetHint={handleGetHint}
+          onForfeit={handleForfeit}
           hint={hint}
         />
       )}

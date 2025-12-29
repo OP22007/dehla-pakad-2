@@ -43,7 +43,7 @@ export const PlayingCard: React.FC<PlayingCardProps> = ({
 
   // Mobile landscape compact sizing
   const sizeClass = isMobileLandscape 
-    ? 'w-10 h-14' 
+    ? 'w-11 h-14' 
     : 'w-16 h-24 sm:w-20 sm:h-28 lg:w-28 lg:h-40 xl:w-32 xl:h-48';
 
   return (
@@ -63,7 +63,7 @@ export const PlayingCard: React.FC<PlayingCardProps> = ({
         className={`
           relative w-full h-full transition-transform duration-500 transform-style-3d rounded-md sm:rounded-lg md:rounded-xl
           ${isFaceUp ? 'rotate-y-180' : ''}
-          ${isSelected ? 'card-shadow-hover' : 'card-shadow'}
+          ${isSelected ? 'card-shadow-hover' : (isMobileLandscape ? 'shadow-[0_2px_4px_rgba(0,0,0,0.3)]' : 'card-shadow')}
         `}
       >
         {/* Card Back */}
@@ -80,12 +80,17 @@ export const PlayingCard: React.FC<PlayingCardProps> = ({
         {/* Card Front */}
         <div className={`
           absolute inset-0 w-full h-full backface-hidden rotate-y-180 
-          bg-[#fdfbf7] overflow-hidden border border-gray-300
+          bg-[#fffcf5] overflow-hidden border border-gray-300
           ${isMobileLandscape ? 'rounded-sm' : 'rounded-md sm:rounded-lg md:rounded-xl'}
           ${isSelected ? 'ring-2 ring-gold-400 ring-offset-1 ring-offset-transparent' : ''}
         `}>
            {/* Inner Shadow for Thickness */}
            <div className={`absolute inset-0 shadow-[inset_0_0_4px_rgba(0,0,0,0.1)] pointer-events-none z-10 ${isMobileLandscape ? 'rounded-sm' : 'rounded-md sm:rounded-lg md:rounded-xl'}`} />
+           
+           {/* Darker felt behind cards for contrast */}
+           {isMobileLandscape && (
+             <div className="absolute -inset-1 bg-black/20 -z-10 rounded-md blur-sm" />
+           )}
 
            {/* Corner Top-Left */}
            <div className={`absolute ${isMobileLandscape ? 'top-0.5 left-0.5' : 'top-0.5 left-0.5 sm:top-1 sm:left-1 md:top-2 md:left-2'} flex flex-col items-center ${colorClass}`}>

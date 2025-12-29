@@ -74,7 +74,8 @@ io.on('connection', (socket: Socket) => {
         name: playerName,
         isReady: false,
         isHost: true,
-        socketId: socket.id
+        socketId: socket.id,
+        connected: true
       };
 
       const newRoom: Room = {
@@ -106,6 +107,32 @@ io.on('connection', (socket: Socket) => {
         return callback({ success: false, error: 'Room not found' });
       }
 
+      // Check for reconnection
+      const disconnectedPlayer = room.players.find(p => p.name === playerName && !p.connected);
+      
+      if (disconnectedPlayer) {
+        // Reconnect logic
+        disconnectedPlayer.socketId = socket.id;
+        disconnectedPlayer.connected = true;
+        playerRoomMap.set(socket.id, roomCode);
+        socket.join(roomCode);
+        
+        console.log(`Player ${playerName} reconnected to room ${roomCode}`);
+        
+        // Send current state
+        io.to(roomCode).emit('room_update', room);
+        
+        if (room.status === 'playing') {
+           const gameState = games.get(roomCode);
+           if (gameState) {
+             const playerState = GameLogic.getPlayerState(gameState, disconnectedPlayer.id);
+             socket.emit('game_start', playerState); // Or game_update, but game_start sets initial data
+           }
+        }
+        
+        return callback({ success: true, room, playerId: disconnectedPlayer.id });
+      }
+
       if (room.players.length >= room.maxPlayers) {
         return callback({ success: false, error: 'Room is full' });
       }
@@ -119,7 +146,8 @@ io.on('connection', (socket: Socket) => {
         name: playerName,
         isReady: false,
         isHost: false,
-        socketId: socket.id
+        socketId: socket.id,
+        connected: true
       };
 
       room.players.push(newPlayer);
@@ -266,6 +294,41 @@ io.on('connection', (socket: Socket) => {
     }
   });
 
+  // Forfeit Game
+  socket.on('forfeit_game', () => {
+    const roomCode = playerRoomMap.get(socket.id);
+    if (!roomCode) return;
+
+    const room = rooms.get(roomCode);
+    if (!room) return;
+
+    const gameState = games.get(roomCode);
+    if (!gameState || gameState.status !== 'playing') return;
+
+    const player = room.players.find(p => p.socketId === socket.id);
+    if (!player) return;
+
+    // Determine which team the player is on
+    const isTeam1 = gameState.teams.team1.players.includes(player.id);
+    const isTeam2 = gameState.teams.team2.players.includes(player.id);
+
+    if (!isTeam1 && !isTeam2) return;
+
+    // Set winner to the OTHER team
+    gameState.winner = isTeam1 ? 'team2' : 'team1';
+    gameState.status = 'finished';
+    gameState.logs.push(`${player.name} forfeited the game.`);
+
+    games.set(roomCode, gameState);
+    broadcastGameState(roomCode, gameState);
+    
+    // Clear timer
+    if (turnTimers.has(roomCode)) {
+      clearTimeout(turnTimers.get(roomCode)!);
+      turnTimers.delete(roomCode);
+    }
+  });
+
   // Play Again / Next Round
   socket.on('play_again', (callback: (res: ApiResponse) => void) => {
     const roomCode = playerRoomMap.get(socket.id);
@@ -327,10 +390,23 @@ const handleLeaveRoom = (socket: Socket) => {
   const room = rooms.get(roomCode);
   if (!room) return;
 
-  // Remove player
   const playerIndex = room.players.findIndex(p => p.socketId === socket.id);
   if (playerIndex !== -1) {
     const player = room.players[playerIndex];
+    
+    // If game is playing, mark as disconnected but don't remove
+    if (room.status === 'playing') {
+      player.connected = false;
+      console.log(`Player ${player.name} disconnected from active game in room ${roomCode}`);
+      io.to(roomCode).emit('room_update', room);
+      
+      // Trigger auto-play if it's their turn?
+      // The turn timer will handle it eventually, but we could speed it up.
+      // For now, let the timer handle it to give them a chance to reconnect quickly.
+      return;
+    }
+
+    // Otherwise remove player
     room.players.splice(playerIndex, 1);
     playerRoomMap.delete(socket.id);
     socket.leave(roomCode);

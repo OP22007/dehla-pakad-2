@@ -4,6 +4,7 @@ export interface Player {
   isReady: boolean;
   isHost: boolean;
   socketId: string;
+  connected: boolean; // Track connection status
 }
 
 export interface Room {
