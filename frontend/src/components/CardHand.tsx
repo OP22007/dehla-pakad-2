@@ -19,6 +19,7 @@ interface CardHandProps {
   layout?: 'fan' | 'scroll'; // New prop for layout mode
   hiddenTrumpCardId?: string | null;
   isTrumpRevealed?: boolean;
+  isMobileLandscape?: boolean;
 }
 
 export const CardHand: React.FC<CardHandProps> = ({
@@ -32,15 +33,17 @@ export const CardHand: React.FC<CardHandProps> = ({
   isActive = true,
   layout = 'fan',
   hiddenTrumpCardId,
-  isTrumpRevealed = false
+  isTrumpRevealed = false,
+  isMobileLandscape = false
 }) => {
   const totalCards = cards.length;
 
   if (layout === 'scroll') {
     return (
       <div className={`
-        flex overflow-x-auto overflow-y-visible px-4 py-4 gap-[-20px] snap-x snap-mandatory w-full h-40 items-end
-        scrollbar-hide mask-linear-fade
+        flex overflow-x-auto overflow-y-visible px-2 gap-[-20px] snap-x snap-mandatory w-full items-end
+        scrollbar-hide mask-linear-fade pb-1
+        ${isMobileLandscape ? 'h-24 py-1' : 'h-40 py-4'}
         ${className} 
         ${!isActive ? 'opacity-60' : ''}
       `}>
@@ -55,11 +58,11 @@ export const CardHand: React.FC<CardHandProps> = ({
             <div
               key={card.id}
               className={`
-                flex-shrink-0 snap-center transition-all duration-300 relative
-                ${isSelected ? '-translate-y-4 z-20' : 'z-10'}
+                shrink-0 snap-center transition-all duration-300 relative
+                ${isSelected ? '-translate-y-3 z-20' : 'z-10'}
               `}
               style={{ 
-                marginLeft: index === 0 ? 0 : '-30px', // Overlap
+                marginLeft: index === 0 ? 0 : isMobileLandscape ? '-24px' : '-30px', // More overlap on mobile
                 zIndex: isSelected ? 50 : index 
               }}
             >
@@ -71,10 +74,11 @@ export const CardHand: React.FC<CardHandProps> = ({
                 isValid={isValid}
                 isShaking={isShaking}
                 onClick={() => onCardClick && onCardClick(card.id)}
-                className="shadow-md" // Compact size handled by PlayingCard responsive classes
+                className={`shadow-md ${isMobileLandscape ? 'mobile-landscape-card' : ''}`}
+                isMobileLandscape={isMobileLandscape}
               />
               {isHiddenTrump && (
-                <div className="absolute -top-2 right-0 bg-black/80 text-gold-400 text-[8px] font-bold px-1.5 py-0.5 rounded border border-gold-500/50 z-30 shadow-lg animate-pulse">
+                <div className={`absolute right-0 bg-black/80 text-gold-400 font-bold rounded border border-gold-500/50 z-30 shadow-lg animate-pulse ${isMobileLandscape ? '-top-1 text-[6px] px-1 py-0.5' : '-top-2 text-[8px] px-1.5 py-0.5'}`}>
                   TRUMP
                 </div>
               )}

@@ -211,3 +211,40 @@
 body {
   @apply font-inter bg-casino-green-900 text-gold-100 felt-texture min-h-screen;
 }
+
+/* Mobile Landscape Game Styles */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+  .mobile-landscape-game {
+    touch-action: manipulation;
+  }
+  
+  .mobile-landscape-game .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .mobile-landscape-game .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .mobile-landscape-game .mask-linear-fade {
+    mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+  }
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mask fade for scroll areas */
+.mask-linear-fade {
+  mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%);
+}

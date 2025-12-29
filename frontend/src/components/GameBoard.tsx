@@ -79,26 +79,29 @@ const SetsHistoryModal = ({ isOpen, onClose, gameData, currentPlayerId }: { isOp
   const isTeam2 = gameData.teams.team2.players.includes(currentPlayerId);
   const isSpectator = !isTeam1 && !isTeam2;
 
+  // Check for mobile landscape
+  const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-height: 500px) and (orientation: landscape)').matches;
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-4">
-       <div className="bg-casino-green-900 border border-gold-500/50 rounded-xl p-4 md:p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto shadow-2xl relative flex flex-col">
-          <button onClick={onClose} className="absolute top-4 right-4 text-gold-400 hover:text-white text-xl font-bold z-10">✕</button>
-          <h2 className="text-2xl md:text-3xl font-playfair text-gold-100 mb-6 text-center sticky top-0 bg-casino-green-900/95 py-2 z-10">Collected Sets</h2>
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-2 md:p-4">
+       <div className={`bg-casino-green-900 border border-gold-500/50 rounded-xl shadow-2xl relative flex flex-col ${isMobile ? 'p-2 w-full max-w-lg max-h-[90vh]' : 'p-4 md:p-6 w-full max-w-4xl max-h-[80vh]'} overflow-y-auto`}>
+          <button onClick={onClose} className={`absolute text-gold-400 hover:text-white font-bold z-10 ${isMobile ? 'top-2 right-2 text-lg' : 'top-4 right-4 text-xl'}`}>✕</button>
+          <h2 className={`font-playfair text-gold-100 text-center sticky top-0 bg-casino-green-900/95 z-10 ${isMobile ? 'text-lg mb-2 py-1' : 'text-2xl md:text-3xl mb-6 py-2'}`}>Collected Sets</h2>
           
-          <div className={`grid gap-8 overflow-y-auto pr-2 ${isSpectator ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 justify-items-center'}`}>
+          <div className={`grid overflow-y-auto pr-2 ${isMobile ? 'gap-3 grid-cols-1' : `gap-8 ${isSpectator ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 justify-items-center'}`}`}>
              {/* Team 1 */}
              {(isTeam1 || isSpectator) && (
-             <div className={`bg-black/20 rounded-lg p-4 ${!isSpectator ? 'w-full max-w-2xl' : ''}`}>
-                <div className="flex justify-between items-center mb-4 border-b border-gold-500/30 pb-2">
-                  <h3 className="text-gold-400 font-bold uppercase tracking-widest">Team 1</h3>
-                  <span className="text-gold-200 font-playfair">{gameData.teams.team1.tricksWon} Sets</span>
+             <div className={`bg-black/20 rounded-lg ${isMobile ? 'p-2' : 'p-4'} ${!isSpectator && !isMobile ? 'w-full max-w-2xl' : ''}`}>
+                <div className={`flex justify-between items-center border-b border-gold-500/30 ${isMobile ? 'mb-2 pb-1' : 'mb-4 pb-2'}`}>
+                  <h3 className={`text-gold-400 font-bold uppercase tracking-widest ${isMobile ? 'text-xs' : ''}`}>Team 1</h3>
+                  <span className={`text-gold-200 font-playfair ${isMobile ? 'text-xs' : ''}`}>{gameData.teams.team1.tricksWon} Sets</span>
                 </div>
-                <div className="space-y-3">
-                   {team1Sets.length === 0 && <p className="text-gray-500 text-center italic text-sm py-4">No sets collected yet</p>}
+                <div className={isMobile ? 'space-y-1' : 'space-y-3'}>
+                   {team1Sets.length === 0 && <p className={`text-gray-500 text-center italic ${isMobile ? 'text-xs py-2' : 'text-sm py-4'}`}>No sets collected yet</p>}
                    {team1Sets.map((set, i) => (
-                      <div key={i} className="bg-black/40 p-2 rounded-lg flex gap-1 justify-center items-center border border-gold-500/10">
+                      <div key={i} className={`bg-black/40 rounded-lg flex gap-1 justify-center items-center border border-gold-500/10 ${isMobile ? 'p-1' : 'p-2'}`}>
                          {set.map((card, idx) => (
-                           <div key={idx} className="transform scale-75 -mx-2 first:ml-0">
+                           <div key={idx} className={`${isMobile ? 'transform scale-50 -mx-3 first:ml-0' : 'transform scale-75 -mx-2 first:ml-0'}`}>
                              <PlayingCard 
                                suit={card.suit as Suit} 
                                rank={card.rank as Rank} 
@@ -115,17 +118,17 @@ const SetsHistoryModal = ({ isOpen, onClose, gameData, currentPlayerId }: { isOp
 
              {/* Team 2 */}
              {(isTeam2 || isSpectator) && (
-             <div className={`bg-black/20 rounded-lg p-4 ${!isSpectator ? 'w-full max-w-2xl' : ''}`}>
-                <div className="flex justify-between items-center mb-4 border-b border-gold-500/30 pb-2">
-                  <h3 className="text-gold-400 font-bold uppercase tracking-widest">Team 2</h3>
-                  <span className="text-gold-200 font-playfair">{gameData.teams.team2.tricksWon} Sets</span>
+             <div className={`bg-black/20 rounded-lg ${isMobile ? 'p-2' : 'p-4'} ${!isSpectator && !isMobile ? 'w-full max-w-2xl' : ''}`}>
+                <div className={`flex justify-between items-center border-b border-gold-500/30 ${isMobile ? 'mb-2 pb-1' : 'mb-4 pb-2'}`}>
+                  <h3 className={`text-gold-400 font-bold uppercase tracking-widest ${isMobile ? 'text-xs' : ''}`}>Team 2</h3>
+                  <span className={`text-gold-200 font-playfair ${isMobile ? 'text-xs' : ''}`}>{gameData.teams.team2.tricksWon} Sets</span>
                 </div>
-                <div className="space-y-3">
-                   {team2Sets.length === 0 && <p className="text-gray-500 text-center italic text-sm py-4">No sets collected yet</p>}
+                <div className={isMobile ? 'space-y-1' : 'space-y-3'}>
+                   {team2Sets.length === 0 && <p className={`text-gray-500 text-center italic ${isMobile ? 'text-xs py-2' : 'text-sm py-4'}`}>No sets collected yet</p>}
                    {team2Sets.map((set, i) => (
-                      <div key={i} className="bg-black/40 p-2 rounded-lg flex gap-1 justify-center items-center border border-gold-500/10">
+                      <div key={i} className={`bg-black/40 rounded-lg flex gap-1 justify-center items-center border border-gold-500/10 ${isMobile ? 'p-1' : 'p-2'}`}>
                          {set.map((card, idx) => (
-                           <div key={idx} className="transform scale-75 -mx-2 first:ml-0">
+                           <div key={idx} className={`${isMobile ? 'transform scale-50 -mx-3 first:ml-0' : 'transform scale-75 -mx-2 first:ml-0'}`}>
                              <PlayingCard 
                                suit={card.suit as Suit} 
                                rank={card.rank as Rank} 
@@ -174,8 +177,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   useEffect(() => {
     const checkMobileLandscape = () => {
       const isLandscape = window.matchMedia('(orientation: landscape)').matches;
-      const isMobile = window.matchMedia('(max-width: 900px)').matches; // Tablet/Mobile width
-      setIsMobileLandscape(isLandscape && isMobile);
+      const isMobileWidth = window.matchMedia('(max-width: 932px)').matches; // Mobile width (typical phone landscape)
+      const isSmallHeight = window.matchMedia('(max-height: 500px)').matches; // Small height devices
+      setIsMobileLandscape(isLandscape && (isMobileWidth || isSmallHeight));
     };
 
     checkMobileLandscape();
@@ -387,43 +391,106 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   };
 
   return (
-    <div className="relative w-full h-screen bg-casino-green-900 overflow-hidden select-none font-sans flex flex-col">
+    <div className={`relative w-full h-screen bg-casino-green-900 overflow-hidden select-none font-sans flex flex-col ${isMobileLandscape ? 'mobile-landscape-game' : ''}`}>
       <OrientationPrompt />
       
       {/* Background Texture */}
       <div className="absolute inset-0 felt-texture pointer-events-none" />
         
         {/* Top Bar */}
-        <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-start z-20 pointer-events-none">
+        <div className="absolute top-0 left-0 right-0 p-4 md:p-6 flex justify-between items-start z-20 pointer-events-none">
           {!isMobileLandscape && (
-            <button 
-              onClick={onLeaveGame}
-              className="pointer-events-auto text-gold-400 hover:text-gold-200 font-playfair text-sm bg-black/40 px-6 py-2 rounded-full backdrop-blur-md border border-gold-500/30 transition-all hover:border-gold-400 shadow-lg"
-            >
-              Exit Game
-            </button>
+            <div className="flex gap-2 pointer-events-auto">
+              <button 
+                onClick={onLeaveGame}
+                className="text-gold-400 hover:text-gold-200 font-playfair text-xs md:text-sm bg-black/40 px-4 py-1.5 md:px-6 md:py-2 rounded-full backdrop-blur-md border border-gold-500/30 transition-all hover:border-gold-400 shadow-lg"
+              >
+                Exit
+              </button>
+              <button 
+                onClick={onPlayAgain}
+                className="text-gold-400 hover:text-gold-200 font-playfair text-xs md:text-sm bg-black/40 px-4 py-1.5 md:px-6 md:py-2 rounded-full backdrop-blur-md border border-gold-500/30 transition-all hover:border-gold-400 shadow-lg"
+              >
+                Restart
+              </button>
+            </div>
           )}
           
-          {/* Mobile Score Board */}
+          {/* Mobile Score Board - Redesigned for landscape */}
           {isMobileLandscape && (
-            <div className="fixed top-2 left-1/2 -translate-x-1/2 flex gap-6 bg-black/60 backdrop-blur-md rounded-full px-6 py-1 border border-gold-500/20 shadow-lg pointer-events-auto z-50">
-              <div className="flex items-center gap-2">
-                <span className="text-gold-500 text-[8px] font-bold uppercase tracking-widest">T1</span>
-                <span className="text-gold-100 font-playfair text-xl font-bold">{gameData.teams.team1.tricksWon}</span>
-                <div className="flex gap-0.5">
-                  {[...Array(gameData.teams.team1.tensCollected)].map((_, i) => (
-                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-gold-400 shadow-[0_0_4px_rgba(212,175,55,0.8)]" />
-                  ))}
+            <div className="fixed top-0 left-0 right-0 flex justify-between items-center px-2 py-1.5 pointer-events-auto z-50 bg-linear-to-b from-black/70 to-transparent">
+              {/* Left: Exit/Restart buttons */}
+              <div className="flex gap-1.5">
+                <button 
+                  onClick={onLeaveGame}
+                  className="bg-black/50 px-2.5 py-1 rounded-md border border-gold-500/40 text-[10px] text-gold-400 hover:bg-black/70 transition-colors font-semibold"
+                >
+                  Exit
+                </button>
+                <button 
+                  onClick={onPlayAgain}
+                  className="bg-black/50 px-2.5 py-1 rounded-md border border-gold-500/40 text-[10px] text-gold-400 hover:bg-black/70 transition-colors font-semibold"
+                >
+                  Restart
+                </button>
+              </div>
+
+              {/* Center: Scoreboard */}
+              <div className="flex items-center gap-3 bg-black/60 backdrop-blur-sm rounded-lg px-4 py-1.5 border border-gold-500/30 shadow-lg">
+                {/* Team 1 */}
+                <div className="flex flex-col items-center min-w-12">
+                  <span className="text-gold-500 text-[8px] font-bold uppercase tracking-wider">Team 1</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className={`text-gold-100 font-playfair text-xl font-bold leading-none ${scoreAnimating === 'team1' ? 'animate-score-update' : ''}`}>
+                      {gameData.teams.team1.tricksWon}
+                    </span>
+                    <span className="text-gold-400 text-[8px]">({gameData.teams.team1.tensCollected} 10s)</span>
+                  </div>
+                </div>
+                
+                {/* Divider */}
+                <div className="w-px bg-gold-500/40 h-6" />
+                
+                {/* Team 2 */}
+                <div className="flex flex-col items-center min-w-12">
+                  <span className="text-gold-500 text-[8px] font-bold uppercase tracking-wider">Team 2</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className={`text-gold-100 font-playfair text-xl font-bold leading-none ${scoreAnimating === 'team2' ? 'animate-score-update' : ''}`}>
+                      {gameData.teams.team2.tricksWon}
+                    </span>
+                    <span className="text-gold-400 text-[8px]">({gameData.teams.team2.tensCollected} 10s)</span>
+                  </div>
                 </div>
               </div>
-              <div className="w-px bg-gold-500/30 h-4 self-center" />
+
+              {/* Right: Sets + Trump */}
               <div className="flex items-center gap-2">
-                <span className="text-gold-500 text-[8px] font-bold uppercase tracking-widest">T2</span>
-                <span className="text-gold-100 font-playfair text-xl font-bold">{gameData.teams.team2.tricksWon}</span>
-                <div className="flex gap-0.5">
-                  {[...Array(gameData.teams.team2.tensCollected)].map((_, i) => (
-                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-gold-400 shadow-[0_0_4px_rgba(212,175,55,0.8)]" />
-                  ))}
+                {/* Sets Button */}
+                <button 
+                  onClick={() => setShowSetsHistory(true)}
+                  className="w-8 h-8 bg-black/50 backdrop-blur rounded-md border border-gold-500/40 flex items-center justify-center shadow-md active:scale-95 transition-transform"
+                  title="View Sets"
+                >
+                  <div className="flex flex-col gap-0.5 opacity-80">
+                    <div className="w-3 h-2 border border-gold-400 rounded-[1px] bg-gold-500/10"></div>
+                    <div className="w-3 h-2 border border-gold-400 rounded-[1px] bg-gold-500/10 -mt-1.5 ml-0.5"></div>
+                  </div>
+                </button>
+
+                {/* Trump Indicator */}
+                <div className="w-8 h-8 bg-black/50 backdrop-blur rounded-md border border-gold-500/40 flex items-center justify-center shadow-md">
+                  {gameData.isTrumpRevealed && gameData.trumpSuit ? (
+                    <span className={`text-xl drop-shadow-sm ${
+                      ['hearts', 'diamonds'].includes(gameData.trumpSuit) ? 'text-red-500' : 'text-white'
+                    }`}>
+                      {gameData.trumpSuit === 'spades' && '♠'}
+                      {gameData.trumpSuit === 'hearts' && '♥'}
+                      {gameData.trumpSuit === 'diamonds' && '♦'}
+                      {gameData.trumpSuit === 'clubs' && '♣'}
+                    </span>
+                  ) : (
+                    <Spades className="w-4 h-4 text-gold-600/60" />
+                  )}
                 </div>
               </div>
             </div>
@@ -492,70 +559,37 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             </div>
           )}
 
-          {/* Mobile Landscape Right Side Controls */}
-          {isMobileLandscape && (
-            <>
-              {/* History Button (Mobile) */}
-              <button 
-                onClick={() => setShowSetsHistory(true)}
-                className="fixed top-2 right-14 w-10 h-10 bg-black/40 backdrop-blur rounded-full border border-gold-500/30 flex items-center justify-center shadow-lg z-50 active:scale-95 transition-transform"
-              >
-                <div className="flex flex-col gap-0.5 opacity-80">
-                  <div className="w-4 h-3 border border-gold-400 rounded-[1px] bg-gold-500/10"></div>
-                  <div className="w-4 h-3 border border-gold-400 rounded-[1px] bg-gold-500/10 -mt-2 ml-1"></div>
-                </div>
-              </button>
-
-              <div className="fixed top-2 right-2 pointer-events-auto z-50">
-                 {gameData.isTrumpRevealed && gameData.trumpSuit ? (
-                   <div className="w-10 h-10 bg-black/40 backdrop-blur rounded-full border border-gold-500/30 flex items-center justify-center shadow-lg">
-                      <span className={`text-2xl drop-shadow-md ${
-                        ['hearts', 'diamonds'].includes(gameData.trumpSuit) ? 'text-red-500' : 'text-white'
-                      }`}>
-                      {gameData.trumpSuit === 'spades' && '♠'}
-                      {gameData.trumpSuit === 'hearts' && '♥'}
-                      {gameData.trumpSuit === 'diamonds' && '♦'}
-                      {gameData.trumpSuit === 'clubs' && '♣'}
-                      </span>
-                   </div>
-                 ) : (
-                   <div className="w-10 h-10 rounded-full border-2 border-dashed border-gold-500/30 flex items-center justify-center opacity-50 bg-black/20">
-                     <Spades className="w-4 h-4 text-gold-600" />
-                   </div>
-                 )}
-              </div>
-            </>
-          )}
+          {/* Mobile Landscape controls now in top bar */}
         </div>
 
         {/* Game Area */}
-        <div className="flex-1 relative perspective-1000 flex items-center justify-center">
+        <div className={`flex-1 relative perspective-1000 flex items-center justify-center ${isMobileLandscape ? 'pt-10' : ''}`}>
           
           {/* Center Trick Area */}
           <div className={`
             absolute rounded-full border-2 border-dashed border-gold-500/10 flex items-center justify-center bg-black/20 shadow-[inset_0_0_60px_rgba(0,0,0,0.4)]
-            ${isMobileLandscape ? 'w-64 h-64' : 'w-72 h-72 -translate-y-12'}
+            ${isMobileLandscape ? 'w-28 h-28' : 'w-72 h-72 -translate-y-12'}
           `}>
             {/* Inner stitching ring */}
-            <div className="absolute inset-3 rounded-full border border-gold-500/10 border-dashed opacity-60" />
+            <div className="absolute inset-2 rounded-full border border-gold-500/10 border-dashed opacity-60" />
             
             {/* Vignette for Mobile Landscape */}
             {isMobileLandscape && (
-              <div className="fixed inset-0 bg-radial-transparent-black pointer-events-none z-[-1]" style={{ background: 'radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.7) 100%)' }} />
+              <div className="fixed inset-0 bg-radial-transparent-black pointer-events-none z-[-1]" style={{ background: 'radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.6) 100%)' }} />
             )}
             
             {gameData.currentTrick.map((played, index) => {
                const rotation = getCardRotation(played.playerId);
                const pos = getCardPosition(played.playerId);
                // Tighter stacking for mobile landscape
-               const mobileScale = isMobileLandscape ? 0.6 : 1;
+               const mobileScale = isMobileLandscape ? 0.35 : 1;
                
                return (
                 <div 
                   key={`${played.playerId}-${index}`}
                   className="absolute transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1)"
                   style={{ 
-                    transform: `translate(${pos.x * mobileScale}px, ${pos.y * mobileScale}px) rotate(${rotation + (Math.random() * 4 - 2)}deg)`, // Add slight randomness
+                    transform: `translate(${pos.x * mobileScale}px, ${pos.y * mobileScale}px) rotate(${rotation + (Math.random() * 4 - 2)}deg) scale(${isMobileLandscape ? 0.4 : 1})`, // Add slight randomness
                     zIndex: index
                   }}
                 >
@@ -573,30 +607,30 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           {/* Trump Selector Overlay (Blind Selection) */}
           {showTrumpSelector && (
             <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center animate-fade-in">
-              <div className="flex flex-col items-center gap-8">
-                <h3 className="text-3xl font-playfair text-gold-100 drop-shadow-lg">Select a Hidden Trump Card</h3>
-                <p className="text-gold-400 italic">Pick one card to set the trump suit secretly</p>
+              <div className={`flex flex-col items-center ${isMobileLandscape ? 'gap-2' : 'gap-8'}`}>
+                <h3 className={`font-playfair text-gold-100 drop-shadow-lg ${isMobileLandscape ? 'text-lg' : 'text-3xl'}`}>Select a Hidden Trump Card</h3>
+                <p className={`text-gold-400 italic ${isMobileLandscape ? 'text-xs' : ''}`}>Pick one card to set the trump suit secretly</p>
                 
-                <div className="flex gap-4 perspective-1000">
+                <div className={`flex perspective-1000 ${isMobileLandscape ? 'gap-2' : 'gap-4'}`}>
                   {myCards.slice(0, 5).map((card, index) => (
                     <div 
                       key={card.id}
                       onClick={() => onSetTrump(card.id)}
-                      className="w-32 h-48 bg-casino-green-800 rounded-xl border-2 border-gold-600 shadow-2xl cursor-pointer transform hover:-translate-y-6 hover:scale-105 transition-all duration-300 group relative"
+                      className={`bg-casino-green-800 border-2 border-gold-600 shadow-2xl cursor-pointer transform hover:-translate-y-4 hover:scale-105 transition-all duration-300 group relative ${isMobileLandscape ? 'w-14 h-20 rounded-md' : 'w-32 h-48 rounded-xl'}`}
                       style={{ animationDelay: `${index * 100}ms` }}
                     >
                       {/* Card Back Pattern */}
-                      <div className="absolute inset-0 w-full h-full rounded-xl overflow-hidden">
+                      <div className={`absolute inset-0 w-full h-full overflow-hidden ${isMobileLandscape ? 'rounded-md' : 'rounded-xl'}`}>
                         <div className="w-full h-full opacity-40 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDIwIDIwIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmQiIHN0cm9rZS13aWR0aD0iMSI+PHBhdGggZD0iTTAgMGwyMCAyME0yMCAwbC0yMCAyMCIvPjwvc3ZnPg==')]"></div>
-                        <div className="absolute inset-2 border border-gold-500/50 rounded-lg"></div>
+                        <div className={`absolute border border-gold-500/50 ${isMobileLandscape ? 'inset-1 rounded-sm' : 'inset-2 rounded-lg'}`}></div>
                         <div className="absolute inset-0 flex items-center justify-center">
-                           <div className="w-16 h-16 rounded-full border-2 border-gold-400 flex items-center justify-center bg-casino-green-900 shadow-lg group-hover:scale-110 transition-transform">
-                              <span className="text-2xl font-playfair text-gold-300">CP</span>
+                           <div className={`rounded-full border-2 border-gold-400 flex items-center justify-center bg-casino-green-900 shadow-lg group-hover:scale-110 transition-transform ${isMobileLandscape ? 'w-8 h-8' : 'w-16 h-16'}`}>
+                              <span className={`font-playfair text-gold-300 ${isMobileLandscape ? 'text-xs' : 'text-2xl'}`}>CP</span>
                            </div>
                         </div>
                       </div>
                       {/* Glow on hover */}
-                      <div className="absolute inset-0 rounded-xl bg-gold-400/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className={`absolute inset-0 bg-gold-400/20 opacity-0 group-hover:opacity-100 transition-opacity ${isMobileLandscape ? 'rounded-md' : 'rounded-xl'}`} />
                     </div>
                   ))}
                 </div>
@@ -606,7 +640,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           {/* Player: North (Partner) */}
           {partnerId && (
-            <div className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 transition-all duration-300 ${isMobileLandscape ? 'top-2 scale-90' : 'top-2'}`}>
+            <div className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center transition-all duration-300 ${isMobileLandscape ? 'top-12 gap-1' : 'top-2 gap-4'}`}>
               <PlayerNameplate 
                 name={getPlayerName(partnerId)} 
                 team={getTeamName(partnerId)} 
@@ -614,11 +648,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 timeLeft={gameData.currentTurn === partnerId ? timeLeft : undefined}
                 variant={isMobileLandscape ? 'minimal' : 'standard'}
               />
-              <div className={`origin-top opacity-90 ${isMobileLandscape ? 'scale-75 -mt-2' : 'scale-75'}`}>
+              <div className={`origin-top opacity-90 ${isMobileLandscape ? 'scale-50 -mt-3' : 'scale-75'}`}>
                  {/* Show back of cards */}
                <div className="flex -space-x-16">
                  {gameData.hands[partnerId]?.map((_, i) => (
-                   <div key={i} className="w-16 h-24 sm:w-20 sm:h-28 lg:w-24 lg:h-36 bg-casino-green-800 rounded-md sm:rounded-lg border-2 border-gold-600 shadow-lg transform hover:-translate-y-2 transition-transform">
+                   <div key={i} className={`bg-casino-green-800 rounded-md sm:rounded-lg border-2 border-gold-600 shadow-lg transform hover:-translate-y-2 transition-transform ${isMobileLandscape ? 'w-12 h-18' : 'w-16 h-24 sm:w-20 sm:h-28 lg:w-24 lg:h-36'}`}>
                       <div className="w-full h-full opacity-40 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDIwIDIwIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmQiIHN0cm9rZS13aWR0aD0iMSI+PHBhdGggZD0iTTAgMGwyMCAyME0yMCAwbC0yMCAyMCIvPjwvc3ZnPg==')]"></div>
                    </div>
                  ))}
@@ -629,7 +663,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           {/* Player: West (Left Opponent) */}
           {leftOpponentId && (
-            <div className={`absolute top-1/2 -translate-y-1/2 flex flex-col items-center gap-4 -rotate-90 origin-center transition-all duration-300 ${isMobileLandscape ? 'left-2 scale-90' : 'left-12'}`}>
+            <div className={`absolute top-1/2 -translate-y-1/2 flex items-center -rotate-90 origin-center transition-all duration-300 ${isMobileLandscape ? 'left-6 gap-1' : 'left-12 gap-4 flex-col'}`}>
               <PlayerNameplate 
                 name={getPlayerName(leftOpponentId)} 
                 team={getTeamName(leftOpponentId)} 
@@ -637,10 +671,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 timeLeft={gameData.currentTurn === leftOpponentId ? timeLeft : undefined}
                 variant={isMobileLandscape ? 'minimal' : 'standard'}
               />
-               <div className={`origin-center mt-4 opacity-90 ${isMobileLandscape ? 'scale-75 -mt-2' : 'scale-75'}`}>
+               <div className={`origin-center opacity-90 ${isMobileLandscape ? 'scale-50' : 'scale-75 mt-4'}`}>
                  <div className="flex -space-x-16">
                    {gameData.hands[leftOpponentId]?.map((_, i) => (
-                     <div key={i} className="w-16 h-24 sm:w-20 sm:h-28 lg:w-24 lg:h-36 bg-casino-green-800 rounded-md sm:rounded-lg border-2 border-gold-600 shadow-lg">
+                     <div key={i} className={`bg-casino-green-800 rounded-md sm:rounded-lg border-2 border-gold-600 shadow-lg ${isMobileLandscape ? 'w-12 h-18' : 'w-16 h-24 sm:w-20 sm:h-28 lg:w-24 lg:h-36'}`}>
                         <div className="w-full h-full opacity-40 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDIwIDIwIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmQiIHN0cm9rZS13aWR0aD0iMSI+PHBhdGggZD0iTTAgMGwyMCAyME0yMCAwbC0yMCAyMCIvPjwvc3ZnPg==')]"></div>
                      </div>
                    ))}
@@ -651,7 +685,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           {/* Player: East (Right Opponent) */}
           {rightOpponentId && (
-            <div className={`absolute top-1/2 -translate-y-1/2 flex flex-col items-center gap-4 rotate-90 origin-center transition-all duration-300 ${isMobileLandscape ? 'right-2 scale-90' : 'right-12'}`}>
+            <div className={`absolute top-1/2 -translate-y-1/2 flex items-center rotate-90 origin-center transition-all duration-300 ${isMobileLandscape ? 'right-6 gap-1' : 'right-12 gap-4 flex-col'}`}>
               <PlayerNameplate 
                 name={getPlayerName(rightOpponentId)} 
                 team={getTeamName(rightOpponentId)} 
@@ -659,10 +693,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 timeLeft={gameData.currentTurn === rightOpponentId ? timeLeft : undefined}
                 variant={isMobileLandscape ? 'minimal' : 'standard'}
               />
-               <div className={`origin-center mt-4 opacity-90 ${isMobileLandscape ? 'scale-75 -mt-2' : 'scale-75'}`}>
+               <div className={`origin-center opacity-90 ${isMobileLandscape ? 'scale-50' : 'scale-75 mt-4'}`}>
                  <div className="flex -space-x-16">
                    {gameData.hands[rightOpponentId]?.map((_, i) => (
-                     <div key={i} className="w-16 h-24 sm:w-20 sm:h-28 lg:w-24 lg:h-36 bg-casino-green-800 rounded-md sm:rounded-lg border-2 border-gold-600 shadow-lg">
+                     <div key={i} className={`bg-casino-green-800 rounded-md sm:rounded-lg border-2 border-gold-600 shadow-lg ${isMobileLandscape ? 'w-12 h-18' : 'w-16 h-24 sm:w-20 sm:h-28 lg:w-24 lg:h-36'}`}>
                         <div className="w-full h-full opacity-40 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDIwIDIwIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmQiIHN0cm9rZS13aWR0aD0iMSI+PHBhdGggZD0iTTAgMGwyMCAyME0yMCAwbC0yMCAyMCIvPjwvc3ZnPg==')]"></div>
                      </div>
                    ))}
@@ -672,9 +706,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           )}
 
           {/* Player: South (Me) */}
-          <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-5xl flex flex-col items-center gap-4 transition-all duration-300 ${isMobileLandscape ? 'pb-0' : 'pb-4'}`}>
+          <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center transition-all duration-300 ${isMobileLandscape ? 'w-[85%] pb-0 gap-0' : 'w-full max-w-5xl pb-4 gap-4'}`}>
             {/* My Hand */}
-            <div className={`relative w-full flex justify-center items-end perspective-1000 z-10 transition-all duration-500 ${isMobileLandscape ? 'h-40' : 'h-56'} ${!isMyTurn ? 'opacity-70 grayscale-30 pointer-events-none' : ''}`}>
+            <div className={`relative w-full flex justify-center items-end perspective-1000 z-10 transition-all duration-500 ${isMobileLandscape ? 'h-28' : 'h-56'} ${!isMyTurn ? 'opacity-70 grayscale-30 pointer-events-none' : ''}`}>
                <CardHand 
                  cards={myCards.map(c => ({ ...c, suit: c.suit as Suit, rank: c.rank as Rank }))}
                  onCardClick={handleCardClick}
@@ -685,10 +719,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                  layout={isMobileLandscape ? 'scroll' : 'fan'}
                  hiddenTrumpCardId={gameData.hiddenTrumpCard?.id}
                  isTrumpRevealed={gameData.isTrumpRevealed}
+                 isMobileLandscape={isMobileLandscape}
                />
             </div>
             
-            <div className="relative z-20">
+            <div className={`relative z-20 ${isMobileLandscape ? '-mt-1' : ''}`}>
                <PlayerNameplate 
                  name={getPlayerName(currentPlayerId)} 
                  team={getTeamName(currentPlayerId)} 
@@ -697,7 +732,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                  variant={isMobileLandscape ? 'minimal' : 'standard'}
                />
                {isMyTurn && (
-                 <div className={`absolute left-1/2 -translate-x-1/2 bg-gold-500 text-black font-bold px-4 py-1 rounded-full animate-pulse shadow-[0_0_15px_rgba(255,215,0,0.8)] whitespace-nowrap ${isMobileLandscape ? '-top-8 text-xs' : '-top-12'}`}>
+                 <div className={`absolute left-1/2 -translate-x-1/2 bg-gold-500 text-black font-bold rounded-full animate-pulse shadow-[0_0_15px_rgba(255,215,0,0.8)] whitespace-nowrap ${isMobileLandscape ? '-top-6 text-[9px] px-2 py-0.5' : '-top-12 px-4 py-1'}`}>
                    YOUR TURN
                  </div>
                )}
@@ -707,7 +742,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
 
         {/* Bottom UI Panel */}
-        <div className={`absolute bottom-0 left-0 right-0 h-16 md:h-24 bg-linear-to-t from-black/90 via-black/50 to-transparent flex items-center px-4 md:px-12 pb-2 md:pb-6 z-30 pointer-events-none ${isMobileLandscape ? 'justify-end' : 'justify-between'}`}>
+        <div className={`absolute left-0 right-0 flex items-center z-30 pointer-events-none ${
+          isMobileLandscape 
+            ? 'bottom-2 justify-end px-2 h-auto' 
+            : 'bottom-0 h-16 md:h-24 bg-linear-to-t from-black/90 via-black/50 to-transparent justify-between px-4 md:px-12 pb-2 md:pb-6'
+        }`}>
           
           {/* Trump Reveal Indicator (Passive) - Hidden on Mobile Landscape (moved to top) */}
           {!isMobileLandscape && (
@@ -737,22 +776,23 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         )}
 
         {/* Call Trump Button */}
-        <div className="flex gap-2 md:gap-4 items-end pointer-events-auto">
+        <div className={`flex items-end pointer-events-auto ${isMobileLandscape ? 'gap-1.5 fixed bottom-14 right-2 flex-col z-40' : 'gap-2 md:gap-4'}`}>
           {/* Ask Ishara Button */}
           <button
             onClick={onGetHint}
             disabled={!isMyTurn || gameData.status !== 'playing'}
             className={`
-              w-10 h-10 md:w-16 md:h-16 rounded-full border-2 flex items-center justify-center
+              rounded-full border-2 flex items-center justify-center
               transform transition-all duration-300 group relative
+              ${isMobileLandscape ? 'w-8 h-8' : 'w-10 h-10 md:w-16 md:h-16'}
               ${isMyTurn && gameData.status === 'playing'
                 ? 'bg-purple-900/80 border-purple-400 shadow-[0_0_20px_rgba(147,51,234,0.5)] hover:scale-110 hover:bg-purple-800 cursor-pointer' 
                 : 'bg-gray-800 border-gray-600 opacity-50 cursor-not-allowed grayscale'}
             `}
           >
             <div className="flex flex-col items-center">
-              <span className="text-lg md:text-2xl">🔮</span>
-              <span className="text-[6px] md:text-[8px] text-purple-200 font-bold uppercase tracking-wider mt-0.5 md:mt-1">Ishara</span>
+              <span className={`${isMobileLandscape ? 'text-sm' : 'text-lg md:text-2xl'}`}>🔮</span>
+              {!isMobileLandscape && <span className="text-[6px] md:text-[8px] text-purple-200 font-bold uppercase tracking-wider mt-0.5 md:mt-1">Ishara</span>}
             </div>
             
             {/* Tooltip */}
@@ -765,19 +805,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             onClick={onRevealTrump}
             disabled={!canCallTrump}
             className={`
-              w-16 h-16 md:w-24 md:h-24 rounded-full border-2 md:border-4 flex items-center justify-center
+              rounded-full border-2 md:border-4 flex items-center justify-center
               transform transition-all duration-300
+              ${isMobileLandscape ? 'w-12 h-12' : 'w-16 h-16 md:w-24 md:h-24'}
               ${canCallTrump 
                 ? 'bg-gold-gradient border-gold-200 shadow-[0_0_60px_rgba(255,215,0,0.9),inset_0_0_20px_rgba(255,255,255,0.5)] hover:scale-110 active:scale-95 animate-pulse-slow cursor-pointer ring-4 ring-gold-400/80 hover:shadow-[0_0_100px_rgba(255,215,0,1)]' 
-                : 'bg-gray-800 border-gray-600 opacity-50 cursor-not-allowed grayscale'}
+                : 'bg-gray-900/80 border-gray-500 cursor-not-allowed backdrop-blur-sm'}
             `}
           >
             <div className={`
-              w-14 h-14 md:w-20 md:h-20 rounded-full border-2 flex items-center justify-center flex-col
+              rounded-full border-2 flex items-center justify-center flex-col
+              ${isMobileLandscape ? 'w-10 h-10' : 'w-14 h-14 md:w-20 md:h-20'}
               ${canCallTrump ? 'border-casino-green-900/50 bg-white/10 backdrop-blur-sm' : 'border-gray-500/30'}
             `}>
-              <span className={`font-bold text-[8px] md:text-xs tracking-widest drop-shadow-md ${canCallTrump ? 'text-casino-green-950' : 'text-gray-400'}`}>CALL</span>
-              <span className={`font-bold text-[8px] md:text-xs tracking-widest drop-shadow-md ${canCallTrump ? 'text-casino-green-950' : 'text-gray-400'}`}>TRUMP</span>
+              <span className={`font-bold tracking-widest drop-shadow-md ${isMobileLandscape ? 'text-[6px]' : 'text-[8px] md:text-xs'} ${canCallTrump ? 'text-casino-green-950' : 'text-gray-300'}`}>CALL</span>
+              <span className={`font-bold tracking-widest drop-shadow-md ${isMobileLandscape ? 'text-[6px]' : 'text-[8px] md:text-xs'} ${canCallTrump ? 'text-casino-green-950' : 'text-gray-300'}`}>TRUMP</span>
             </div>
             {/* Shine Effect */}
             {canCallTrump && (
@@ -790,15 +832,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       {/* Ishara Hint Overlay */}
       {showHint && hint && (
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up pointer-events-none">
-          <div className="bg-purple-900/90 backdrop-blur-md border border-purple-400/50 px-8 py-6 rounded-xl shadow-[0_0_50px_rgba(147,51,234,0.4)] max-w-md text-center relative overflow-hidden">
+        <div className={`absolute left-1/2 -translate-x-1/2 z-50 animate-fade-in-up pointer-events-none ${isMobileLandscape ? 'top-14' : 'top-1/4'}`}>
+          <div className={`bg-purple-900/90 backdrop-blur-md border border-purple-400/50 rounded-xl shadow-[0_0_50px_rgba(147,51,234,0.4)] text-center relative overflow-hidden ${isMobileLandscape ? 'px-4 py-2 max-w-xs' : 'px-8 py-6 max-w-md'}`}>
             {/* Mystical Glow */}
             <div className="absolute inset-0 bg-linear-to-r from-transparent via-purple-400/10 to-transparent animate-shimmer" />
             
             <div className="relative z-10">
-              <div className="text-3xl mb-2">🔮</div>
-              <h4 className="text-purple-200 font-playfair text-lg mb-2 italic">The Spirit Whispers...</h4>
-              <p className="text-white font-serif text-xl leading-relaxed drop-shadow-md">
+              <div className={isMobileLandscape ? 'text-xl mb-1' : 'text-3xl mb-2'}>🔮</div>
+              <h4 className={`text-purple-200 font-playfair italic ${isMobileLandscape ? 'text-xs mb-1' : 'text-lg mb-2'}`}>The Spirit Whispers...</h4>
+              <p className={`text-white font-serif leading-relaxed drop-shadow-md ${isMobileLandscape ? 'text-sm' : 'text-xl'}`}>
                 "{hint}"
               </p>
             </div>
@@ -836,42 +878,42 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       {/* Victory Screen */}
       {gameData.status === 'finished' && (
-        <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-lg flex flex-col items-center justify-center animate-fade-in">
-          <div className="text-6xl mb-8 animate-bounce">🏆</div>
-          <h2 className="text-5xl font-playfair text-gold-100 mb-4 drop-shadow-[0_0_20px_rgba(255,215,0,0.5)]">
+        <div className={`absolute inset-0 z-50 bg-black/90 backdrop-blur-lg flex flex-col items-center justify-center animate-fade-in ${isMobileLandscape ? 'px-4' : ''}`}>
+          <div className={`animate-bounce ${isMobileLandscape ? 'text-3xl mb-2' : 'text-6xl mb-8'}`}>🏆</div>
+          <h2 className={`font-playfair text-gold-100 drop-shadow-[0_0_20px_rgba(255,215,0,0.5)] ${isMobileLandscape ? 'text-2xl mb-2' : 'text-5xl mb-4'}`}>
             {gameData.winner === 'team1' ? 'Team 1 Wins!' : 'Team 2 Wins!'}
           </h2>
           
-          <div className="flex gap-12 mt-8">
+          <div className={`flex ${isMobileLandscape ? 'gap-6 mt-2' : 'gap-12 mt-8'}`}>
             <div className="flex flex-col items-center">
-              <span className="text-gold-400 uppercase tracking-widest text-sm mb-2">Team 1</span>
-              <span className="text-4xl font-bold text-white">{gameData.teams.team1.tensCollected}</span>
-              <span className="text-xs text-gray-400">Tens</span>
-              <span className="text-2xl font-bold text-white mt-2">{gameData.teams.team1.tricksWon}</span>
-              <span className="text-xs text-gray-400">Tricks</span>
+              <span className={`text-gold-400 uppercase tracking-widest ${isMobileLandscape ? 'text-[8px] mb-1' : 'text-sm mb-2'}`}>Team 1</span>
+              <span className={`font-bold text-white ${isMobileLandscape ? 'text-xl' : 'text-4xl'}`}>{gameData.teams.team1.tensCollected}</span>
+              <span className={`text-gray-400 ${isMobileLandscape ? 'text-[8px]' : 'text-xs'}`}>Tens</span>
+              <span className={`font-bold text-white ${isMobileLandscape ? 'text-lg mt-1' : 'text-2xl mt-2'}`}>{gameData.teams.team1.tricksWon}</span>
+              <span className={`text-gray-400 ${isMobileLandscape ? 'text-[8px]' : 'text-xs'}`}>Tricks</span>
             </div>
             
             <div className="w-px bg-gold-500/30" />
             
             <div className="flex flex-col items-center">
-              <span className="text-gold-400 uppercase tracking-widest text-sm mb-2">Team 2</span>
-              <span className="text-4xl font-bold text-white">{gameData.teams.team2.tensCollected}</span>
-              <span className="text-xs text-gray-400">Tens</span>
-              <span className="text-2xl font-bold text-white mt-2">{gameData.teams.team2.tricksWon}</span>
-              <span className="text-xs text-gray-400">Tricks</span>
+              <span className={`text-gold-400 uppercase tracking-widest ${isMobileLandscape ? 'text-[8px] mb-1' : 'text-sm mb-2'}`}>Team 2</span>
+              <span className={`font-bold text-white ${isMobileLandscape ? 'text-xl' : 'text-4xl'}`}>{gameData.teams.team2.tensCollected}</span>
+              <span className={`text-gray-400 ${isMobileLandscape ? 'text-[8px]' : 'text-xs'}`}>Tens</span>
+              <span className={`font-bold text-white ${isMobileLandscape ? 'text-lg mt-1' : 'text-2xl mt-2'}`}>{gameData.teams.team2.tricksWon}</span>
+              <span className={`text-gray-400 ${isMobileLandscape ? 'text-[8px]' : 'text-xs'}`}>Tricks</span>
             </div>
           </div>
 
-          <div className="flex gap-4 mt-12">
+          <div className={`flex gap-4 ${isMobileLandscape ? 'mt-4' : 'mt-12'}`}>
             <button 
               onClick={onPlayAgain}
-              className="px-8 py-3 bg-gold-600 text-black font-bold rounded-full hover:bg-gold-400 transition-colors shadow-lg animate-pulse"
+              className={`bg-gold-600 text-black font-bold rounded-full hover:bg-gold-400 transition-colors shadow-lg animate-pulse ${isMobileLandscape ? 'px-4 py-1.5 text-xs' : 'px-8 py-3'}`}
             >
               Next Round
             </button>
             <button 
               onClick={onLeaveGame}
-              className="px-8 py-3 bg-black/40 text-gold-400 font-bold rounded-full border border-gold-500/30 hover:bg-black/60 transition-colors shadow-lg"
+              className={`bg-black/40 text-gold-400 font-bold rounded-full border border-gold-500/30 hover:bg-black/60 transition-colors shadow-lg ${isMobileLandscape ? 'px-4 py-1.5 text-xs' : 'px-8 py-3'}`}
             >
               Return to Lobby
             </button>
@@ -879,7 +921,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           
           {/* Simple CSS Confetti */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(50)].map((_, i) => (
+            {[...Array(isMobileLandscape ? 30 : 50)].map((_, i) => (
               <div 
                 key={i}
                 className="absolute w-2 h-2 bg-gold-400 rounded-full animate-confetti"
@@ -895,11 +937,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* Orientation Prompt (Mobile Landscape) */}
-      {isMobileLandscape && (
-        <OrientationPrompt />
-      )}
-
       {/* Sets History Modal */}
       {gameData && (
         <SetsHistoryModal 
@@ -911,12 +948,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       )}
 
       {/* Status Messages Overlay */}
-      <div className="absolute top-24 left-0 right-0 flex flex-col items-center gap-2 z-40 pointer-events-none">
+      <div className={`absolute left-0 right-0 flex flex-col items-center gap-2 z-40 pointer-events-none ${isMobileLandscape ? 'top-14' : 'top-24'}`}>
          {/* Trump Selection Status */}
          {gameData.status === 'calling_trump' && !isMyTurn && (
-           <div className="bg-black/60 backdrop-blur-md border border-gold-500/30 px-6 py-2 rounded-full animate-pulse flex items-center gap-2">
+           <div className={`bg-black/60 backdrop-blur-md border border-gold-500/30 rounded-full animate-pulse flex items-center gap-2 ${isMobileLandscape ? 'px-3 py-1' : 'px-6 py-2'}`}>
              <div className="w-2 h-2 bg-gold-400 rounded-full animate-ping" />
-             <span className="text-gold-200 font-playfair">
+             <span className={`text-gold-200 font-playfair ${isMobileLandscape ? 'text-[10px]' : ''}`}>
                Waiting for <span className="text-gold-400 font-bold">{getPlayerName(gameData.trumpCallerId)}</span> to select trump...
              </span>
            </div>
@@ -924,9 +961,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
          {/* Trump Reveal Notification */}
          {showTrumpRevealNotification && gameData.trumpRevealerId && (
-           <div className="bg-red-900/90 backdrop-blur-md border border-red-500/50 px-8 py-3 rounded-full animate-bounce-in shadow-[0_0_30px_rgba(220,38,38,0.5)] flex items-center gap-3">
-             <span className="text-2xl">📢</span>
-             <span className="text-white font-bold text-lg">
+           <div className={`bg-red-900/90 backdrop-blur-md border border-red-500/50 rounded-full animate-bounce-in shadow-[0_0_30px_rgba(220,38,38,0.5)] flex items-center gap-2 ${isMobileLandscape ? 'px-4 py-1' : 'px-8 py-3 gap-3'}`}>
+             <span className={isMobileLandscape ? 'text-base' : 'text-2xl'}>📢</span>
+             <span className={`text-white font-bold ${isMobileLandscape ? 'text-xs' : 'text-lg'}`}>
                {getPlayerName(gameData.trumpRevealerId)} called Trump!
              </span>
            </div>
