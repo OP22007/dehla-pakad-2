@@ -404,8 +404,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             </button>
           )}
           
-          {/* Score Board */}
-          {isMobileLandscape ? (
+          {/* Mobile Score Board */}
+          {isMobileLandscape && (
             <div className="fixed top-2 left-1/2 -translate-x-1/2 flex gap-6 bg-black/60 backdrop-blur-md rounded-full px-6 py-1 border border-gold-500/20 shadow-lg pointer-events-auto z-50">
               <div className="flex items-center gap-2">
                 <span className="text-gold-500 text-[8px] font-bold uppercase tracking-widest">T1</span>
@@ -427,32 +427,73 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="wood-panel rounded-lg md:rounded-xl px-4 py-2 md:px-8 md:py-3 shadow-2xl flex gap-4 md:gap-10 pointer-events-auto transform hover:scale-105 transition-transform">
-              <div className="flex flex-col items-center">
-                <span className="text-gold-500 text-[8px] md:text-[10px] font-bold tracking-[0.2em] uppercase mb-0.5 md:mb-1">Team 1</span>
-                <div className="flex items-baseline gap-1 md:gap-2">
-                  <span className={`text-gold-100 font-playfair text-2xl md:text-4xl font-bold drop-shadow-md leading-none transition-all ${scoreAnimating === 'team1' ? 'animate-score-update text-white drop-shadow-[0_0_10px_rgba(212,175,55,0.8)]' : ''}`}>
-                    {gameData.teams.team1.tricksWon}
-                  </span>
-                  <span className="text-gold-400 text-[10px] md:text-xs font-bold">({gameData.teams.team1.tensCollected} 10s)</span>
-                </div>
-              </div>
-              <div className="w-px bg-gold-500/30 h-8 md:h-12 self-center" />
-              <div className="flex flex-col items-center">
-                <span className="text-gold-500 text-[8px] md:text-[10px] font-bold tracking-[0.2em] uppercase mb-0.5 md:mb-1">Team 2</span>
-                <div className="flex items-baseline gap-1 md:gap-2">
-                  <span className={`text-gold-100 font-playfair text-2xl md:text-4xl font-bold drop-shadow-md leading-none transition-all ${scoreAnimating === 'team2' ? 'animate-score-update text-white drop-shadow-[0_0_10px_rgba(212,175,55,0.8)]' : ''}`}>
-                    {gameData.teams.team2.tricksWon}
-                  </span>
-                  <span className="text-gold-400 text-[10px] md:text-xs font-bold">({gameData.teams.team2.tensCollected} 10s)</span>
-                </div>
-              </div>
+          )}
+
+          {/* Desktop Right Side: Scoreboard + Sets + Trump */}
+          {!isMobileLandscape && (
+            <div className="flex gap-6 items-start pointer-events-auto ml-auto">
+               {/* Scoreboard */}
+               <div className="wood-panel rounded-lg md:rounded-xl px-4 py-2 md:px-8 md:py-3 shadow-2xl flex gap-4 md:gap-10 transform hover:scale-105 transition-transform">
+                  <div className="flex flex-col items-center">
+                    <span className="text-gold-500 text-[8px] md:text-[10px] font-bold tracking-[0.2em] uppercase mb-0.5 md:mb-1">Team 1</span>
+                    <div className="flex items-baseline gap-1 md:gap-2">
+                      <span className={`text-gold-100 font-playfair text-2xl md:text-4xl font-bold drop-shadow-md leading-none transition-all ${scoreAnimating === 'team1' ? 'animate-score-update text-white drop-shadow-[0_0_10px_rgba(212,175,55,0.8)]' : ''}`}>
+                        {gameData.teams.team1.tricksWon}
+                      </span>
+                      <span className="text-gold-400 text-[10px] md:text-xs font-bold">({gameData.teams.team1.tensCollected} 10s)</span>
+                    </div>
+                  </div>
+                  <div className="w-px bg-gold-500/30 h-8 md:h-12 self-center" />
+                  <div className="flex flex-col items-center">
+                    <span className="text-gold-500 text-[8px] md:text-[10px] font-bold tracking-[0.2em] uppercase mb-0.5 md:mb-1">Team 2</span>
+                    <div className="flex items-baseline gap-1 md:gap-2">
+                      <span className={`text-gold-100 font-playfair text-2xl md:text-4xl font-bold drop-shadow-md leading-none transition-all ${scoreAnimating === 'team2' ? 'animate-score-update text-white drop-shadow-[0_0_10px_rgba(212,175,55,0.8)]' : ''}`}>
+                        {gameData.teams.team2.tricksWon}
+                      </span>
+                      <span className="text-gold-400 text-[10px] md:text-xs font-bold">({gameData.teams.team2.tensCollected} 10s)</span>
+                    </div>
+                  </div>
+               </div>
+
+               {/* Sets & Trump */}
+               <div className="flex gap-4 items-start">
+                  <button 
+                    onClick={() => setShowSetsHistory(true)}
+                    className="bg-black/40 px-4 py-2 rounded-lg border border-gold-500/30 backdrop-blur-md hover:bg-black/60 transition-colors flex flex-col items-center gap-1 group h-full justify-center shadow-lg"
+                  >
+                    <div className="flex flex-col gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                      <div className="w-5 h-3 border border-gold-400 rounded-[1px] bg-gold-500/10"></div>
+                      <div className="w-5 h-3 border border-gold-400 rounded-[1px] bg-gold-500/10 -mt-2 ml-1"></div>
+                    </div>
+                    <span className="text-[8px] md:text-[10px] text-gold-400 uppercase tracking-widest">Sets</span>
+                  </button>
+
+                  <div className="bg-black/40 px-3 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl border border-gold-500/30 backdrop-blur-md shadow-lg flex flex-col items-center min-w-16 md:min-w-25">
+                     <span className="text-gold-400 text-[8px] md:text-[10px] uppercase tracking-[0.2em] mb-1 md:mb-2">Trump</span>
+                     {gameData.isTrumpRevealed && gameData.trumpSuit ? (
+                       <div className="text-gold-100 font-bold capitalize flex items-center justify-center animate-pop-in">
+                          {/* Large Suit Icon */}
+                          <span className={`text-2xl md:text-4xl drop-shadow-lg ${
+                            ['hearts', 'diamonds'].includes(gameData.trumpSuit) ? 'text-red-500' : 'text-white'
+                          }`}>
+                          {gameData.trumpSuit === 'spades' && '♠'}
+                          {gameData.trumpSuit === 'hearts' && '♥'}
+                          {gameData.trumpSuit === 'diamonds' && '♦'}
+                          {gameData.trumpSuit === 'clubs' && '♣'}
+                          </span>
+                       </div>
+                     ) : (
+                       <div className="w-6 h-6 md:w-10 md:h-10 rounded-full border-2 border-dashed border-gold-500/30 flex items-center justify-center opacity-50">
+                         <Spades className="w-3 h-3 md:w-4 md:h-4 text-gold-600" />
+                       </div>
+                     )}
+                  </div>
+               </div>
             </div>
           )}
 
-          {/* Trump Indicator & History */}
-          {isMobileLandscape ? (
+          {/* Mobile Landscape Right Side Controls */}
+          {isMobileLandscape && (
             <>
               {/* History Button (Mobile) */}
               <button 
@@ -484,40 +525,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                  )}
               </div>
             </>
-          ) : (
-            <div className="flex gap-4 items-start pointer-events-auto">
-              <button 
-                onClick={() => setShowSetsHistory(true)}
-                className="bg-black/40 px-4 py-2 rounded-lg border border-gold-500/30 backdrop-blur-md hover:bg-black/60 transition-colors flex flex-col items-center gap-1 group h-full justify-center shadow-lg"
-              >
-                <div className="flex flex-col gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                  <div className="w-5 h-3 border border-gold-400 rounded-[1px] bg-gold-500/10"></div>
-                  <div className="w-5 h-3 border border-gold-400 rounded-[1px] bg-gold-500/10 -mt-2 ml-1"></div>
-                </div>
-                <span className="text-[8px] md:text-[10px] text-gold-400 uppercase tracking-widest">Sets</span>
-              </button>
-
-              <div className="bg-black/40 px-3 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl border border-gold-500/30 backdrop-blur-md shadow-lg flex flex-col items-center min-w-16 md:min-w-25">
-                 <span className="text-gold-400 text-[8px] md:text-[10px] uppercase tracking-[0.2em] mb-1 md:mb-2">Trump</span>
-                 {gameData.isTrumpRevealed && gameData.trumpSuit ? (
-                   <div className="text-gold-100 font-bold capitalize flex items-center justify-center animate-pop-in">
-                      {/* Large Suit Icon */}
-                      <span className={`text-2xl md:text-4xl drop-shadow-lg ${
-                        ['hearts', 'diamonds'].includes(gameData.trumpSuit) ? 'text-red-500' : 'text-white'
-                      }`}>
-                      {gameData.trumpSuit === 'spades' && '♠'}
-                      {gameData.trumpSuit === 'hearts' && '♥'}
-                      {gameData.trumpSuit === 'diamonds' && '♦'}
-                      {gameData.trumpSuit === 'clubs' && '♣'}
-                      </span>
-                   </div>
-                 ) : (
-                   <div className="w-6 h-6 md:w-10 md:h-10 rounded-full border-2 border-dashed border-gold-500/30 flex items-center justify-center opacity-50">
-                     <Spades className="w-3 h-3 md:w-4 md:h-4 text-gold-600" />
-                   </div>
-                 )}
-              </div>
-            </div>
           )}
         </div>
 
@@ -527,7 +534,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           {/* Center Trick Area */}
           <div className={`
             absolute rounded-full border-2 border-dashed border-gold-500/10 flex items-center justify-center bg-black/20 shadow-[inset_0_0_60px_rgba(0,0,0,0.4)]
-            ${isMobileLandscape ? 'w-64 h-64' : 'w-80 h-80'}
+            ${isMobileLandscape ? 'w-64 h-64' : 'w-72 h-72 -translate-y-12'}
           `}>
             {/* Inner stitching ring */}
             <div className="absolute inset-3 rounded-full border border-gold-500/10 border-dashed opacity-60" />
@@ -599,7 +606,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           {/* Player: North (Partner) */}
           {partnerId && (
-            <div className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 transition-all duration-300 ${isMobileLandscape ? 'top-2 scale-90' : 'top-8'}`}>
+            <div className={`absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 transition-all duration-300 ${isMobileLandscape ? 'top-2 scale-90' : 'top-2'}`}>
               <PlayerNameplate 
                 name={getPlayerName(partnerId)} 
                 team={getTeamName(partnerId)} 
