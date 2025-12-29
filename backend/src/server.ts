@@ -266,6 +266,51 @@ io.on('connection', (socket: Socket) => {
     }
   });
 
+  // Play Again / Next Round
+  socket.on('play_again', (callback: (res: ApiResponse) => void) => {
+    const roomCode = playerRoomMap.get(socket.id);
+    if (!roomCode) return callback({ success: false, error: 'Not in a room' });
+
+    const room = rooms.get(roomCode);
+    if (!room) return callback({ success: false, error: 'Room not found' });
+
+    const gameState = games.get(roomCode);
+    if (!gameState) return callback({ success: false, error: 'Game not found' });
+
+    // Only allow if game is finished
+    if (gameState.status !== 'finished') {
+      return callback({ success: false, error: 'Game is not finished yet' });
+    }
+
+    // Check if requester is host (optional, but good for control)
+    const player = room.players.find(p => p.socketId === socket.id);
+    if (!player?.isHost) {
+       return callback({ success: false, error: 'Only host can start next round' });
+    }
+
+    try {
+      // Determine previous winner team
+      const previousWinnerTeam = gameState.winner === 'team1' ? 'team1' : 'team2';
+      
+      // Initialize new game
+      const newGameState = GameLogic.initializeGame(roomCode, room.players.map(p => p.id), previousWinnerTeam);
+      games.set(roomCode, newGameState);
+      
+      // Broadcast new game state
+      room.players.forEach(p => {
+        const playerState = GameLogic.getPlayerState(newGameState, p.id);
+        io.to(p.socketId).emit('game_start', playerState);
+      });
+      
+      resetTurnTimer(roomCode);
+      
+      callback({ success: true });
+    } catch (e) {
+      console.error('Error starting next round:', e);
+      callback({ success: false, error: 'Failed to start next round' });
+    }
+  });
+
   // Disconnect
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);

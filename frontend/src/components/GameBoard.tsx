@@ -55,6 +55,7 @@ interface GameBoardProps {
   players: Player[];
   currentPlayerId: string;
   onLeaveGame: () => void;
+  onPlayAgain: () => void;
   onPlayCard: (cardId: string) => void;
   onSetTrump: (cardId: string) => void;
   onRevealTrump: () => void;
@@ -149,6 +150,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   players,
   currentPlayerId, 
   onLeaveGame,
+  onPlayAgain,
   onPlayCard,
   onSetTrump,
   onRevealTrump,
@@ -164,6 +166,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [timeLeft, setTimeLeft] = useState(45);
   const [isMobileLandscape, setIsMobileLandscape] = useState(false);
   const [showSetsHistory, setShowSetsHistory] = useState(false);
+  const [showTrumpRevealNotification, setShowTrumpRevealNotification] = useState(false);
 
   const prevGameDataRef = React.useRef<GameState | null>(null);
 
@@ -179,6 +182,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     window.addEventListener('resize', checkMobileLandscape);
     return () => window.removeEventListener('resize', checkMobileLandscape);
   }, []);
+
+  // Trump Reveal Notification Logic
+  useEffect(() => {
+    if (gameData?.isTrumpRevealed && gameData?.trumpRevealerId) {
+      setShowTrumpRevealNotification(true);
+      const timer = setTimeout(() => setShowTrumpRevealNotification(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameData?.isTrumpRevealed, gameData?.trumpRevealerId]);
 
   // Timer Logic
   useEffect(() => {
@@ -843,12 +855,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             </div>
           </div>
 
-          <button 
-            onClick={onLeaveGame}
-            className="mt-12 px-8 py-3 bg-gold-600 text-black font-bold rounded-full hover:bg-gold-400 transition-colors shadow-lg"
-          >
-            Return to Lobby
-          </button>
+          <div className="flex gap-4 mt-12">
+            <button 
+              onClick={onPlayAgain}
+              className="px-8 py-3 bg-gold-600 text-black font-bold rounded-full hover:bg-gold-400 transition-colors shadow-lg animate-pulse"
+            >
+              Next Round
+            </button>
+            <button 
+              onClick={onLeaveGame}
+              className="px-8 py-3 bg-black/40 text-gold-400 font-bold rounded-full border border-gold-500/30 hover:bg-black/60 transition-colors shadow-lg"
+            >
+              Return to Lobby
+            </button>
+          </div>
           
           {/* Simple CSS Confetti */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -896,7 +916,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
          )}
 
          {/* Trump Reveal Notification */}
-         {gameData.isTrumpRevealed && gameData.trumpRevealerId && (
+         {showTrumpRevealNotification && gameData.trumpRevealerId && (
            <div className="bg-red-900/90 backdrop-blur-md border border-red-500/50 px-8 py-3 rounded-full animate-bounce-in shadow-[0_0_30px_rgba(220,38,38,0.5)] flex items-center gap-3">
              <span className="text-2xl">📢</span>
              <span className="text-white font-bold text-lg">

@@ -140,6 +140,14 @@ export default function Home() {
     socket.emit('request_hint');
   };
 
+  const handlePlayAgain = () => {
+    socket.emit('play_again', (response: any) => {
+      if (response.error) {
+        setError(response.error);
+      }
+    });
+  };
+
   return (
     <main>
       {error && (
@@ -167,11 +175,12 @@ export default function Home() {
       )}
 
       {gameState === 'playing' && (
-        <GameBoard 
+        <GameBoard
           gameData={gameData}
           players={players}
           currentPlayerId={currentPlayerId}
           onLeaveGame={handleLeaveLobby}
+          onPlayAgain={handlePlayAgain}
           onPlayCard={handlePlayCard}
           onSetTrump={handleSetTrump}
           onRevealTrump={handleRevealTrump}
