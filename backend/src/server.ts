@@ -108,7 +108,16 @@ io.on('connection', (socket: Socket) => {
       }
 
       // Check for reconnection
-      const disconnectedPlayer = room.players.find(p => p.name === playerName && !p.connected);
+      let disconnectedPlayer = room.players.find(p => p.name === playerName && !p.connected);
+
+      // If no exact name match, but room is full, allow taking a disconnected spot
+      if (!disconnectedPlayer && room.players.length >= room.maxPlayers) {
+        disconnectedPlayer = room.players.find(p => !p.connected);
+        if (disconnectedPlayer) {
+          // Update name for the new player taking this spot
+          disconnectedPlayer.name = playerName;
+        }
+      }
       
       if (disconnectedPlayer) {
         // Reconnect logic

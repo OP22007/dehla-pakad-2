@@ -32,6 +32,7 @@ export const generateCrypticHint = async (
   // Identify Teammate
   const playerIndex = gameState.players.indexOf(playerId);
   const teammateId = gameState.players[(playerIndex + 2) % 4];
+  const teammateHand = gameState.hands[teammateId] || [];
   
   // Analyze Hand (Simplified for prompt)
   const suits = playerHand.reduce((acc, card) => {
@@ -58,10 +59,10 @@ export const generateCrypticHint = async (
 
     **Context:**
     - The player holds these cards: ${JSON.stringify(playerHand.map(c => `${c.rank} of ${c.suit}`))}.
+    - The teammate holds these cards: ${JSON.stringify(teammateHand.map(c => `${c.rank} of ${c.suit}`))}.
     - Trump Suit: ${gameState.trumpSuit || "Not yet chosen"}.
     - Trump Revealed: ${gameState.isTrumpRevealed}.
     - Strong Suits: ${strongSuits.join(", ") || "None"}.
-    - Teammate ID: ${teammateId}.
     
     **Rules for the Hint:**
     1. **Metaphorical & Cryptic:** Do NOT say "Play a spade" or "You have many hearts". Use literary devices.
@@ -72,7 +73,7 @@ export const generateCrypticHint = async (
        - **Metaphor:** e.g., "Thunder brews where diamonds dare not tread".
        - **Symbolism:** e.g., "The moon's shadow guards my treasure".
     3. **No Explicit Info:** Never mention specific ranks (Ace, King) or suit names directly. Use colors, elements, or abstract concepts (Red/Crimson/Blood for Hearts/Diamonds, Black/Night/Shadow for Spades/Clubs).
-    4. **Strategic Value:** The hint should subtly suggest a strategy (e.g., "Hold your trumps", "Lead with strength", "Rely on your partner").
+    4. **Strategic Value:** The hint should subtly suggest a strategy based on BOTH your hand and your teammate's hand (e.g., "Your partner holds the key", "Together you are strong in shadows").
     5. **Length:** Keep it under 20 words.
     
     **Generate one single cryptic hint.**
