@@ -282,11 +282,13 @@ io.on('connection', (socket: Socket) => {
       return callback({ success: false, error: 'Game is not finished yet' });
     }
 
-    // Check if requester is host (optional, but good for control)
+    // Allow any player to start next round (removed host check for better UX)
+    /*
     const player = room.players.find(p => p.socketId === socket.id);
     if (!player?.isHost) {
        return callback({ success: false, error: 'Only host can start next round' });
     }
+    */
 
     try {
       // Determine previous winner team
