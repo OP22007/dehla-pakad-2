@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CasinoButton } from './CasinoButton';
 import { Spades, Hearts, Diamonds, Clubs } from './icons/SuitIcons';
 
@@ -7,9 +7,22 @@ interface LandingScreenProps {
   onJoinGame: (code: string, playerName: string) => void;
 }
 
+const generateRandomName = () => {
+  const adjectives = ['Royal', 'Golden', 'Lucky', 'Brave', 'Swift', 'Grand', 'Ace', 'Wild', 'Sharp', 'Bold'];
+  const nouns = ['King', 'Queen', 'Jack', 'Player', 'Dealer', 'Shark', 'Knight', 'Baron', 'Duke', 'Star'];
+  const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+  const randomNum = Math.floor(Math.random() * 100);
+  return `${randomAdjective}${randomNoun}${randomNum}`;
+};
+
 export const LandingScreen: React.FC<LandingScreenProps> = ({ onCreateGame, onJoinGame }) => {
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
+
+  useEffect(() => {
+    setPlayerName(generateRandomName());
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-casino-green-950 relative overflow-hidden">
