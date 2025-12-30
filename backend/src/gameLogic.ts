@@ -374,8 +374,13 @@ export class GameLogic {
     const myTeam = state.teams.team1.players.includes(playerId) ? 'team1' : 'team2';
     const otherTeam = myTeam === 'team1' ? 'team2' : 'team1';
     
-    // Mask won cards of other team
-    publicState.teams[otherTeam].wonCards = publicState.teams[otherTeam].wonCards.map(() => ({ id: 'hidden', suit: 'unknown', rank: 'unknown' }));
+    // Mask won cards of other team, but reveal Tens
+    publicState.teams[otherTeam].wonCards = publicState.teams[otherTeam].wonCards.map((c: Card) => {
+      if (c.rank === '10') {
+        return c; // Reveal Tens
+      }
+      return { id: 'hidden', suit: 'unknown', rank: 'unknown' };
+    });
 
     return publicState;
   }
