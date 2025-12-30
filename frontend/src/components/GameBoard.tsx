@@ -67,6 +67,71 @@ interface GameBoardProps {
   onRespondSignal: (originalSenderId: string, response: 'agree' | 'refuse') => void;
 }
 
+const TensStatus = ({ gameData, currentPlayerId, isMobileLandscape }: { gameData: GameState, currentPlayerId: string, isMobileLandscape: boolean }) => {
+  const suits: Suit[] = ['spades', 'hearts', 'clubs', 'diamonds'];
+  
+  const getTenOwner = (suit: Suit) => {
+    const isInTeam1 = gameData.teams.team1.wonCards.some(c => c.rank === '10' && c.suit === suit);
+    if (isInTeam1) return 'team1';
+    const isInTeam2 = gameData.teams.team2.wonCards.some(c => c.rank === '10' && c.suit === suit);
+    if (isInTeam2) return 'team2';
+    return null;
+  };
+
+  const isPlayerTeam1 = gameData.teams.team1.players.includes(currentPlayerId);
+
+  return (
+    <div className={`flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-lg border border-gold-500/30 pointer-events-auto ${isMobileLandscape ? 'px-2 py-1 ml-2' : 'px-3 py-1.5 ml-4'}`}>
+      <span className={`text-gold-400 font-playfair uppercase tracking-widest ${isMobileLandscape ? 'text-[8px]' : 'text-[10px]'}`}>Tens:</span>
+      <div className="flex gap-1 md:gap-2">
+        {suits.map(suit => {
+          const owner = getTenOwner(suit);
+          const Icon = suit === 'spades' ? Spades : suit === 'hearts' ? Hearts : suit === 'clubs' ? Clubs : Diamonds;
+          
+          // Determine color/style based on owner
+          let opacity = 'opacity-30 grayscale';
+          let border = 'border-transparent';
+          let bg = 'bg-transparent';
+          let tooltip = 'Not collected';
+          let indicatorColor = '';
+
+          if (owner) {
+            opacity = 'opacity-100';
+            const isMyTeam = (owner === 'team1' && isPlayerTeam1) || (owner === 'team2' && !isPlayerTeam1);
+            
+            if (isMyTeam) {
+              border = 'border-green-500/50';
+              bg = 'bg-green-900/30';
+              tooltip = 'Collected by Your Team';
+              indicatorColor = 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.8)]';
+            } else {
+              border = 'border-red-500/50';
+              bg = 'bg-red-900/30';
+              tooltip = 'Collected by Opponents';
+              indicatorColor = 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)]';
+            }
+          }
+
+          return (
+            <div key={suit} className={`
+              relative rounded p-0.5 md:p-1 border ${border} ${bg} transition-all duration-300
+              ${isMobileLandscape ? 'w-5 h-5' : 'w-6 h-6 md:w-8 md:h-8'} flex items-center justify-center
+            `} title={tooltip}>
+              <div className={`${opacity} transition-all duration-300 w-full h-full`}>
+                <Icon className="w-full h-full" />
+              </div>
+              {/* Small indicator dot for owner */}
+              {owner && (
+                <div className={`absolute -top-1 -right-1 w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${indicatorColor}`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const SetsHistoryModal = ({ isOpen, onClose, gameData, currentPlayerId }: { isOpen: boolean; onClose: () => void; gameData: GameState; currentPlayerId: string }) => {
   if (!isOpen) return null;
 
@@ -87,7 +152,7 @@ const SetsHistoryModal = ({ isOpen, onClose, gameData, currentPlayerId }: { isOp
   const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-height: 500px) and (orientation: landscape)').matches;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-2 md:p-4">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-2 md:p-4">
        <div className={`bg-casino-green-900 border border-gold-500/50 rounded-xl shadow-2xl relative flex flex-col ${isMobile ? 'p-2 w-full max-w-lg max-h-[90vh]' : 'p-4 md:p-6 w-full max-w-4xl max-h-[80vh]'} overflow-y-auto`}>
           <button onClick={onClose} className={`absolute text-gold-400 hover:text-white font-bold z-50 ${isMobile ? 'top-2 right-2 text-lg' : 'top-4 right-4 text-xl'}`}>✕</button>
           <h2 className={`font-playfair text-gold-100 text-center sticky top-0 bg-casino-green-900/95 z-10 ${isMobile ? 'text-lg mb-2 py-1' : 'text-2xl md:text-3xl mb-6 py-2'}`}>Collected Sets</h2>
@@ -427,6 +492,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   Forfeit
                 </button>
               )}
+              
+              {/* Tens Status Display */}
+              <TensStatus gameData={gameData} currentPlayerId={currentPlayerId} isMobileLandscape={false} />
             </div>
           )}
           
@@ -455,6 +523,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     Forfeit
                   </button>
                 )}
+                
+                {/* Tens Status Display (Mobile) */}
+                <TensStatus gameData={gameData} currentPlayerId={currentPlayerId} isMobileLandscape={true} />
               </div>
 
               {/* Right Group: Scoreboard + Sets + Trump */}
@@ -463,7 +534,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 <div className="flex items-center gap-3 bg-black/60 backdrop-blur-sm rounded-lg px-4 py-1.5 border border-gold-500/30 shadow-lg">
                   {/* Team 1 */}
                   <div className="flex flex-col items-center min-w-12">
-                    <span className="text-gold-500 text-[8px] font-bold uppercase tracking-wider">Team 1</span>
+                    <span className="text-gold-500 text-[8px] md:text-[10px] font-bold tracking-[0.2em] uppercase mb-0.5 md:mb-1">Team 1</span>
                     <div className="flex items-baseline gap-1">
                       <span className={`text-gold-100 font-playfair text-xl font-bold leading-none ${scoreAnimating === 'team1' ? 'animate-score-update' : ''}`}>
                         {gameData.teams.team1.tricksWon}
@@ -477,7 +548,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   
                   {/* Team 2 */}
                   <div className="flex flex-col items-center min-w-12">
-                    <span className="text-gold-500 text-[8px] font-bold uppercase tracking-wider">Team 2</span>
+                    <span className="text-gold-500 text-[8px] md:text-[10px] font-bold tracking-[0.2em] uppercase mb-0.5 md:mb-1">Team 2</span>
                     <div className="flex items-baseline gap-1">
                       <span className={`text-gold-100 font-playfair text-xl font-bold leading-none ${scoreAnimating === 'team2' ? 'animate-score-update' : ''}`}>
                         {gameData.teams.team2.tricksWon}
