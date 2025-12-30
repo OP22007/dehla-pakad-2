@@ -23,6 +23,12 @@ const crimson = Crimson_Pro({
 export const metadata: Metadata = {
   title: "Court Piece - Premium Casino",
   description: "Experience the classic game of Court Piece in a premium casino setting",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
 };
 
 export default function RootLayout({
@@ -31,9 +37,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="h-full">
       <body
-        className={`${playfair.variable} ${inter.variable} ${crimson.variable} antialiased bg-casino-green-900 text-gold-100`}
+        className={`${playfair.variable} ${inter.variable} ${crimson.variable} antialiased bg-casino-green-900 text-gold-100 h-full`}
       >
         {children}
       </body>
