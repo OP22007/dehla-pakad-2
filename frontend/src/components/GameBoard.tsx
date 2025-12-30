@@ -4,6 +4,7 @@ import { CardHand } from './CardHand';
 import { PlayerNameplate } from './PlayerNameplate';
 import { CasinoButton } from './CasinoButton';
 import { Spades, Hearts, Diamonds, Clubs } from './icons/SuitIcons';
+import { TeaIcon, WatchIcon, GlassesIcon, CheckIcon, XIcon } from './icons/GeneralIcons';
 import OrientationPrompt from './OrientationPrompt';
 
 // Types
@@ -59,9 +60,11 @@ interface GameBoardProps {
   onPlayCard: (cardId: string) => void;
   onSetTrump: (cardId: string) => void;
   onRevealTrump: () => void;
-  onGetHint: () => void;
   onForfeit: () => void;
-  hint: string | null;
+  incomingSignal: {senderId: string, signal: 'tea' | 'watch' | 'glasses'} | null;
+  signalFeedback: {responderId: string, response: 'agree' | 'refuse'} | null;
+  onSendSignal: (signal: 'tea' | 'watch' | 'glasses') => void;
+  onRespondSignal: (originalSenderId: string, response: 'agree' | 'refuse') => void;
 }
 
 const SetsHistoryModal = ({ isOpen, onClose, gameData, currentPlayerId }: { isOpen: boolean; onClose: () => void; gameData: GameState; currentPlayerId: string }) => {
@@ -158,14 +161,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onPlayCard,
   onSetTrump,
   onRevealTrump,
-  onGetHint,
   onForfeit,
-  hint
+  incomingSignal,
+  signalFeedback,
+  onSendSignal,
+  onRespondSignal
 }) => {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [prevScores, setPrevScores] = useState({ team1: 0, team2: 0 });
   const [scoreAnimating, setScoreAnimating] = useState<'team1' | 'team2' | null>(null);
-  const [showHint, setShowHint] = useState(false);
   const [shakingCardId, setShakingCardId] = useState<string | null>(null);
   const [trickAnimating, setTrickAnimating] = useState(false);
   const [timeLeft, setTimeLeft] = useState(45);
@@ -220,13 +224,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [gameData?.lastTrickWinner, gameData?.currentTrick.length]);
 
-  useEffect(() => {
-    if (hint) {
-      setShowHint(true);
-      const timer = setTimeout(() => setShowHint(false), 8000); // Hide hint after 8s
-      return () => clearTimeout(timer);
-    }
-  }, [hint]);
+
 
   useEffect(() => {
     if (!gameData) return;
@@ -809,29 +807,23 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
         {/* Call Trump Button */}
         <div className={`flex items-end pointer-events-auto ${isMobileLandscape ? 'gap-4 fixed bottom-4 right-4 flex-row z-50 items-center' : 'gap-2 md:gap-4'}`}>
-          {/* Ask Ishara Button */}
-          <button
-            onClick={onGetHint}
-            disabled={!isMyTurn || gameData.status !== 'playing'}
-            className={`
-              rounded-full border-2 flex items-center justify-center
-              transform transition-all duration-300 group relative
-              ${isMobileLandscape ? 'w-12 h-12' : 'w-10 h-10 md:w-16 md:h-16'}
-              ${isMyTurn && gameData.status === 'playing'
-                ? 'bg-purple-900/80 border-purple-400 shadow-[0_0_20px_rgba(147,51,234,0.5)] hover:scale-110 hover:bg-purple-800 cursor-pointer' 
-                : 'bg-gray-800 border-gray-600 opacity-50 cursor-not-allowed grayscale'}
-            `}
-          >
-            <div className="flex flex-col items-center">
-              <span className={`${isMobileLandscape ? 'text-sm' : 'text-lg md:text-2xl'}`}>🔮</span>
-              <span className={`text-purple-200 font-bold uppercase tracking-wider mt-0.5 md:mt-1 ${isMobileLandscape ? 'text-[6px]' : 'text-[6px] md:text-[8px]'}`}>Ishara</span>
+          {/* Secret Signal Buttons */}
+          {isMyTurn && gameData.status === 'playing' && (
+            <div className="flex gap-2 mr-2">
+              <button onClick={() => onSendSignal('tea')} className="bg-black/60 p-2 md:p-3 rounded-full hover:bg-black/80 border border-gold-500/30 transition-all hover:scale-110 group relative" title="Sip Tea (Trump?)">
+                <TeaIcon className="w-5 h-5 md:w-8 md:h-8 text-gold-400" />
+                <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black/90 text-gold-100 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Trump?</span>
+              </button>
+              <button onClick={() => onSendSignal('watch')} className="bg-black/60 p-2 md:p-3 rounded-full hover:bg-black/80 border border-gold-500/30 transition-all hover:scale-110 group relative" title="Check Watch (Protect 10?)">
+                <WatchIcon className="w-5 h-5 md:w-8 md:h-8 text-gold-400" />
+                <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black/90 text-gold-100 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Protect 10?</span>
+              </button>
+              <button onClick={() => onSendSignal('glasses')} className="bg-black/60 p-2 md:p-3 rounded-full hover:bg-black/80 border border-gold-500/30 transition-all hover:scale-110 group relative" title="Adjust Glasses (Lead High?)">
+                <GlassesIcon className="w-5 h-5 md:w-8 md:h-8 text-gold-400" />
+                <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black/90 text-gold-100 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">Lead High?</span>
+              </button>
             </div>
-            
-            {/* Tooltip */}
-            <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black/80 text-purple-200 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none hidden md:block">
-              Ask the Spirit
-            </div>
-          </button>
+          )}
 
           <button 
             onClick={onRevealTrump}
@@ -862,20 +854,55 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       </div>
 
-      {/* Ishara Hint Overlay */}
-      {showHint && hint && (
-        <div className={`absolute left-1/2 -translate-x-1/2 z-50 animate-fade-in-up pointer-events-none ${isMobileLandscape ? 'top-14' : 'top-1/4'}`}>
-          <div className={`bg-purple-900/90 backdrop-blur-md border border-purple-400/50 rounded-xl shadow-[0_0_50px_rgba(147,51,234,0.4)] text-center relative overflow-hidden ${isMobileLandscape ? 'px-4 py-2 max-w-xs' : 'px-8 py-6 max-w-md'}`}>
-            {/* Mystical Glow */}
-            <div className="absolute inset-0 bg-linear-to-r from-transparent via-purple-400/10 to-transparent animate-shimmer" />
+      {/* Incoming Signal Overlay */}
+      {incomingSignal && (
+        <div className="absolute inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-casino-green-900 border-2 border-gold-500 rounded-xl p-6 shadow-2xl flex flex-col items-center gap-4 max-w-sm mx-4">
+            <h3 className="text-gold-100 font-playfair text-xl text-center">Teammate Signal</h3>
             
-            <div className="relative z-10">
-              <div className={isMobileLandscape ? 'text-xl mb-1' : 'text-3xl mb-2'}>🔮</div>
-              <h4 className={`text-purple-200 font-playfair italic ${isMobileLandscape ? 'text-xs mb-1' : 'text-lg mb-2'}`}>The Spirit Whispers...</h4>
-              <p className={`text-white font-serif leading-relaxed drop-shadow-md ${isMobileLandscape ? 'text-sm' : 'text-xl'}`}>
-                "{hint}"
-              </p>
+            <div className="w-24 h-24 bg-black/30 rounded-full flex items-center justify-center border border-gold-500/30 animate-pulse">
+              {incomingSignal.signal === 'tea' && <TeaIcon className="w-12 h-12 text-gold-400" />}
+              {incomingSignal.signal === 'watch' && <WatchIcon className="w-12 h-12 text-gold-400" />}
+              {incomingSignal.signal === 'glasses' && <GlassesIcon className="w-12 h-12 text-gold-400" />}
             </div>
+            
+            <p className="text-gold-200 text-center italic text-sm">
+              {incomingSignal.signal === 'tea' && "I am going to use a Trump. Should I?"}
+              {incomingSignal.signal === 'watch' && "I have a 10. Can you protect/win it?"}
+              {incomingSignal.signal === 'glasses' && "I have high cards. Should I lead?"}
+            </p>
+
+            <div className="flex gap-4 w-full">
+              <button 
+                onClick={() => onRespondSignal(incomingSignal.senderId, 'agree')}
+                className="flex-1 bg-green-900/80 hover:bg-green-800 text-green-100 py-2 rounded-lg border border-green-500/50 flex items-center justify-center gap-2 transition-colors"
+              >
+                <CheckIcon className="w-5 h-5" />
+                <span>{incomingSignal.signal === 'tea' ? "Go ahead" : incomingSignal.signal === 'watch' ? "I've got it" : "Yes"}</span>
+              </button>
+              <button 
+                onClick={() => onRespondSignal(incomingSignal.senderId, 'refuse')}
+                className="flex-1 bg-red-900/80 hover:bg-red-800 text-red-100 py-2 rounded-lg border border-red-500/50 flex items-center justify-center gap-2 transition-colors"
+              >
+                <XIcon className="w-5 h-5" />
+                <span>{incomingSignal.signal === 'tea' ? "Wait" : incomingSignal.signal === 'watch' ? "I can't" : "No"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Signal Feedback Overlay */}
+      {signalFeedback && (
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 z-60 animate-bounce-in pointer-events-none">
+          <div className={`
+            flex items-center gap-3 px-6 py-3 rounded-full border shadow-xl backdrop-blur-md
+            ${signalFeedback.response === 'agree' ? 'bg-green-900/90 border-green-500 text-green-100' : 'bg-red-900/90 border-red-500 text-red-100'}
+          `}>
+            {signalFeedback.response === 'agree' ? <CheckIcon className="w-8 h-8" /> : <XIcon className="w-8 h-8" />}
+            <span className="font-bold text-lg">
+              {signalFeedback.response === 'agree' ? "Agreed" : "Refused"}
+            </span>
           </div>
         </div>
       )}

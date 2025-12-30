@@ -51,11 +51,20 @@ export interface PlayedCard {
   card: Card;
 }
 
-export interface TeamState {
-  players: string[];
-  tricksWon: number;
-  tensCollected: number;
-  wonCards: Card[]; // All cards collected by this team
+export type SignalType = 'tea' | 'watch' | 'glasses';
+export type SignalResponse = 'agree' | 'refuse';
+
+export interface SignalPayload {
+  roomId: string;
+  senderId: string;
+  signal: SignalType;
+}
+
+export interface SignalResponsePayload {
+  roomId: string;
+  responderId: string;
+  originalSenderId: string;
+  response: SignalResponse;
 }
 
 export interface GameState {
@@ -78,4 +87,11 @@ export interface GameState {
   logs: string[];
   lastTrickWinner?: string | null;
   lastTrickCards?: PlayedCard[] | null;
+}
+
+export interface TeamState {
+  players: string[];
+  tricksWon: number;
+  tensCollected: number;
+  wonCards: Card[];
 }

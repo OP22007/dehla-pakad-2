@@ -3,7 +3,7 @@ import http from 'http';
 import { Server, Socket } from 'socket.io';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
-import { Room, Player, CreateRoomPayload, JoinRoomPayload, ApiResponse, GameState, Suit } from './types';
+import { Room, Player, CreateRoomPayload, JoinRoomPayload, ApiResponse, GameState, Suit, SignalPayload, SignalResponsePayload } from './types';
 import { generateRoomCode } from './utils';
 import { GameLogic } from './gameLogic';
 import { generateCrypticHint } from './services/geminiService';
@@ -382,6 +382,48 @@ io.on('connection', (socket: Socket) => {
     } catch (e) {
       console.error('Error starting next round:', e);
       callback({ success: false, error: 'Failed to start next round' });
+    }
+  });
+
+  // Secret Signal - Send
+  socket.on('send_signal', ({ roomId, senderId, signal }: SignalPayload) => {
+    const room = rooms.get(roomId);
+    const gameState = games.get(roomId);
+    
+    if (!room || !gameState) return;
+
+    // Find sender's team
+    let teammateId: string | undefined;
+    if (gameState.teams.team1.players.includes(senderId)) {
+      teammateId = gameState.teams.team1.players.find(id => id !== senderId);
+    } else if (gameState.teams.team2.players.includes(senderId)) {
+      teammateId = gameState.teams.team2.players.find(id => id !== senderId);
+    }
+
+    if (teammateId) {
+      const teammate = room.players.find(p => p.id === teammateId);
+      if (teammate && teammate.socketId) {
+        io.to(teammate.socketId).emit('receive_signal', {
+          senderId,
+          signal
+        });
+        console.log(`Signal ${signal} sent from ${senderId} to ${teammateId}`);
+      }
+    }
+  });
+
+  // Secret Signal - Respond
+  socket.on('respond_signal', ({ roomId, responderId, originalSenderId, response }: SignalResponsePayload) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+
+    const sender = room.players.find(p => p.id === originalSenderId);
+    if (sender && sender.socketId) {
+      io.to(sender.socketId).emit('signal_feedback', {
+        responderId,
+        response
+      });
+      console.log(`Signal response ${response} sent from ${responderId} to ${originalSenderId}`);
     }
   });
 

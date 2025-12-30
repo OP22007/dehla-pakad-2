@@ -23,7 +23,7 @@ interface Room {
 }
 
 // Initialize socket outside component to prevent multiple connections
-const socket: Socket = io('https://dehlabackend.duckdns.org/', {
+const socket: Socket = io('http://localhost:3001', {
   autoConnect: false
 });
 
@@ -34,7 +34,8 @@ export default function Home() {
   const [currentPlayerId, setCurrentPlayerId] = useState<string>('');
   const [gameData, setGameData] = useState<any>(null); // Store game state
   const [error, setError] = useState<string | null>(null);
-  const [hint, setHint] = useState<string | null>(null);
+  const [incomingSignal, setIncomingSignal] = useState<{senderId: string, signal: 'tea' | 'watch' | 'glasses'} | null>(null);
+  const [signalFeedback, setSignalFeedback] = useState<{responderId: string, response: 'agree' | 'refuse'} | null>(null);
 
   useEffect(() => {
     // Socket Event Listeners
@@ -58,10 +59,13 @@ export default function Home() {
       setGameData(updatedState);
     });
 
-    socket.on('hint_received', (data: { hint: string }) => {
-      setHint(data.hint);
-      // Clear hint after 8 seconds (matching UI)
-      setTimeout(() => setHint(null), 8000);
+    socket.on('receive_signal', (data: {senderId: string, signal: 'tea' | 'watch' | 'glasses'}) => {
+      setIncomingSignal(data);
+    });
+
+    socket.on('signal_feedback', (data: {responderId: string, response: 'agree' | 'refuse'}) => {
+      setSignalFeedback(data);
+      setTimeout(() => setSignalFeedback(null), 3000);
     });
 
     socket.on('error', (err: { message: string }) => {
@@ -74,7 +78,8 @@ export default function Home() {
       socket.off('room_update');
       socket.off('game_start');
       socket.off('game_update');
-      socket.off('hint_received');
+      socket.off('receive_signal');
+      socket.off('signal_feedback');
       socket.off('error');
     };
   }, []);
@@ -144,32 +149,24 @@ export default function Home() {
     socket.emit('play_card', { cardId });
   };
 
-  const handleGetHint = () => {
-    socket.emit('request_hint');
-  };
-
   const handleForfeit = () => {
-    if (confirm("Are you sure you want to forfeit? This will end the game and the other team will win.")) {
-      socket.emit('forfeit_game');
-    }
+    socket.emit('forfeit_game', { roomCode });
   };
 
-  const handlePlayAgain = () => {
-    socket.emit('play_again', (response: any) => {
-      if (response.error) {
-        setError(response.error);
-      }
-    });
+  const handleSendSignal = (signal: 'tea' | 'watch' | 'glasses') => {
+    socket.emit('send_signal', { roomId: roomCode, senderId: currentPlayerId, signal });
   };
 
+  const handleRespondSignal = (originalSenderId: string, response: 'agree' | 'refuse') => {
+    socket.emit('respond_signal', { roomId: roomCode, responderId: currentPlayerId, originalSenderId, response });
+    setIncomingSignal(null);
+  };
+
+  function handlePlayAgain(): void {
+    socket.emit('start_game');
+  }
   return (
-    <main>
-      {error && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-down">
-          {error}
-        </div>
-      )}
-
+    <main className="min-h-screen bg-casino-green-950 text-white overflow-hidden">
       {gameState === 'lobby' && (
         <LandingScreen 
           onCreateGame={handleCreateGame} 
@@ -189,7 +186,7 @@ export default function Home() {
       )}
 
       {gameState === 'playing' && (
-        <GameBoard
+        <GameBoard 
           gameData={gameData}
           players={players}
           currentPlayerId={currentPlayerId}
@@ -198,10 +195,19 @@ export default function Home() {
           onPlayCard={handlePlayCard}
           onSetTrump={handleSetTrump}
           onRevealTrump={handleRevealTrump}
-          onGetHint={handleGetHint}
           onForfeit={handleForfeit}
-          hint={hint}
+          incomingSignal={incomingSignal}
+          signalFeedback={signalFeedback}
+          onSendSignal={handleSendSignal}
+          onRespondSignal={handleRespondSignal}
         />
+      )}
+      
+      {/* Error Toast */}
+      {error && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-down">
+          {error}
+        </div>
       )}
     </main>
   );
