@@ -82,7 +82,8 @@ io.on('connection', (socket: Socket) => {
         code: roomCode,
         players: [newPlayer],
         status: 'waiting',
-        maxPlayers: 4
+        maxPlayers: 4,
+        voiceChatEnabled: true // Default to true
       };
 
       rooms.set(roomCode, newRoom);
@@ -425,6 +426,66 @@ io.on('connection', (socket: Socket) => {
       });
       console.log(`Signal response ${response} sent from ${responderId} to ${originalSenderId}`);
     }
+  });
+
+  // Voice Chat Signaling
+  socket.on('voice_offer', ({ roomId, targetId, offer }: { roomId: string, targetId: string, offer: any }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+
+    const targetPlayer = room.players.find(p => p.id === targetId);
+    const senderPlayer = room.players.find(p => p.socketId === socket.id);
+
+    if (targetPlayer && targetPlayer.socketId && senderPlayer) {
+      io.to(targetPlayer.socketId).emit('voice_offer', {
+        senderId: senderPlayer.id,
+        offer
+      });
+    }
+  });
+
+  socket.on('voice_answer', ({ roomId, targetId, answer }: { roomId: string, targetId: string, answer: any }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+
+    const targetPlayer = room.players.find(p => p.id === targetId);
+    const senderPlayer = room.players.find(p => p.socketId === socket.id);
+
+    if (targetPlayer && targetPlayer.socketId && senderPlayer) {
+      io.to(targetPlayer.socketId).emit('voice_answer', {
+        senderId: senderPlayer.id,
+        answer
+      });
+    }
+  });
+
+  socket.on('voice_ice_candidate', ({ roomId, targetId, candidate }: { roomId: string, targetId: string, candidate: any }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+
+    const targetPlayer = room.players.find(p => p.id === targetId);
+    const senderPlayer = room.players.find(p => p.socketId === socket.id);
+
+    if (targetPlayer && targetPlayer.socketId && senderPlayer) {
+      io.to(targetPlayer.socketId).emit('voice_ice_candidate', {
+        senderId: senderPlayer.id,
+        candidate
+      });
+    }
+  });
+
+  // Host controls for voice chat
+  socket.on('toggle_voice_chat', ({ roomId, enabled }: { roomId: string, enabled: boolean }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+
+    // Verify host
+    const player = room.players.find(p => p.socketId === socket.id);
+    if (!player || !player.isHost) return;
+
+    room.voiceChatEnabled = enabled;
+    io.to(roomId).emit('voice_chat_status', { enabled });
+    console.log(`Voice chat ${enabled ? 'enabled' : 'disabled'} in room ${roomId}`);
   });
 
   // Disconnect

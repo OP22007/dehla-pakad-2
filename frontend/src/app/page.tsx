@@ -23,7 +23,7 @@ interface Room {
 }
 
 // Initialize socket outside component to prevent multiple connections
-const socket: Socket = io('https://dehlabackend.duckdns.org/', {
+const socket: Socket = io('https://dehlabackend.duckdns.org', {
   autoConnect: false
 });
 
@@ -36,6 +36,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [incomingSignal, setIncomingSignal] = useState<{senderId: string, signal: 'tea' | 'watch' | 'glasses'} | null>(null);
   const [signalFeedback, setSignalFeedback] = useState<{responderId: string, response: 'agree' | 'refuse'} | null>(null);
+  const [voiceChatEnabled, setVoiceChatEnabled] = useState(true);
 
   useEffect(() => {
     // Socket Event Listeners
@@ -68,6 +69,10 @@ export default function Home() {
       setTimeout(() => setSignalFeedback(null), 3000);
     });
 
+    socket.on('voice_chat_status', ({ enabled }: { enabled: boolean }) => {
+      setVoiceChatEnabled(enabled);
+    });
+
     socket.on('error', (err: { message: string }) => {
       setError(err.message);
       // setTimeout(() => setError(null), 3000); // Handled by useEffect now
@@ -80,6 +85,7 @@ export default function Home() {
       socket.off('game_update');
       socket.off('receive_signal');
       socket.off('signal_feedback');
+      socket.off('voice_chat_status');
       socket.off('error');
     };
   }, []);
@@ -153,6 +159,10 @@ export default function Home() {
     socket.emit('forfeit_game', { roomCode });
   };
 
+  const handlePlayAgain = () => {
+    socket.emit('play_again', { roomCode });
+  };
+
   const handleSendSignal = (signal: 'tea' | 'watch' | 'glasses') => {
     socket.emit('send_signal', { roomId: roomCode, senderId: currentPlayerId, signal });
   };
@@ -162,9 +172,10 @@ export default function Home() {
     setIncomingSignal(null);
   };
 
-  function handlePlayAgain(): void {
-    socket.emit('start_game');
-  }
+  const handleToggleVoiceChat = (enabled: boolean) => {
+    socket.emit('toggle_voice_chat', { roomId: roomCode, enabled });
+  };
+
   return (
     <main className="min-h-screen bg-casino-green-950 text-white overflow-hidden">
       {gameState === 'lobby' && (
@@ -182,6 +193,8 @@ export default function Home() {
           onReadyToggle={handleReadyToggle}
           onLeave={handleLeaveLobby}
           onStartGame={handleStartGame}
+          voiceChatEnabled={voiceChatEnabled}
+          onToggleVoiceChat={handleToggleVoiceChat}
         />
       )}
 
@@ -200,6 +213,10 @@ export default function Home() {
           signalFeedback={signalFeedback}
           onSendSignal={handleSendSignal}
           onRespondSignal={handleRespondSignal}
+          voiceChatEnabled={voiceChatEnabled}
+          onToggleVoiceChat={handleToggleVoiceChat}
+          socket={socket}
+          roomCode={roomCode}
         />
       )}
       

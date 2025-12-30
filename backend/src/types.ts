@@ -12,6 +12,7 @@ export interface Room {
   players: Player[];
   status: 'waiting' | 'playing';
   maxPlayers: number;
+  voiceChatEnabled: boolean; // New field
 }
 
 export interface CreateRoomPayload {

@@ -16,6 +16,8 @@ interface WaitingRoomProps {
   onReadyToggle: () => void;
   onLeave: () => void;
   onStartGame: () => void;
+  voiceChatEnabled: boolean;
+  onToggleVoiceChat: (enabled: boolean) => void;
 }
 
 export const WaitingRoom: React.FC<WaitingRoomProps> = ({
@@ -24,7 +26,9 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
   currentPlayerId,
   onReadyToggle,
   onLeave,
-  onStartGame
+  onStartGame,
+  voiceChatEnabled,
+  onToggleVoiceChat
 }) => {
   const [copied, setCopied] = useState(false);
 
@@ -72,6 +76,18 @@ export const WaitingRoom: React.FC<WaitingRoomProps> = ({
               )}
             </div>
           </button>
+          
+          {isHost && (
+            <div className="mt-4 flex items-center gap-2">
+              <label className="text-gold-200 text-sm font-playfair">Voice Chat:</label>
+              <button
+                onClick={() => onToggleVoiceChat(!voiceChatEnabled)}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${voiceChatEnabled ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}
+              >
+                {voiceChatEnabled ? 'Enabled' : 'Disabled'}
+              </button>
+            </div>
+          )}
         </div>
         
         <div className="w-24" /> {/* Spacer for centering */}

@@ -4,7 +4,7 @@ import { CardHand } from './CardHand';
 import { PlayerNameplate } from './PlayerNameplate';
 import { CasinoButton } from './CasinoButton';
 import { Spades, Hearts, Diamonds, Clubs } from './icons/SuitIcons';
-import { TeaIcon, WatchIcon, GlassesIcon, CheckIcon, XIcon } from './icons/GeneralIcons';
+import { TeaIcon, WatchIcon, GlassesIcon, CheckIcon, XIcon, MicIcon, MicOffIcon } from './icons/GeneralIcons';
 import OrientationPrompt from './OrientationPrompt';
 
 // Types
@@ -49,6 +49,7 @@ interface GameState {
 interface Player {
   id: string;
   name: string;
+  isHost?: boolean;
 }
 
 interface GameBoardProps {
@@ -65,6 +66,10 @@ interface GameBoardProps {
   signalFeedback: {responderId: string, response: 'agree' | 'refuse'} | null;
   onSendSignal: (signal: 'tea' | 'watch' | 'glasses') => void;
   onRespondSignal: (originalSenderId: string, response: 'agree' | 'refuse') => void;
+  voiceChatEnabled: boolean;
+  onToggleVoiceChat: (enabled: boolean) => void;
+  socket: any;
+  roomCode: string;
 }
 
 const TensStatus = ({ gameData, currentPlayerId, isMobileLandscape }: { gameData: GameState, currentPlayerId: string, isMobileLandscape: boolean }) => {
@@ -230,8 +235,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   incomingSignal,
   signalFeedback,
   onSendSignal,
-  onRespondSignal
-}) => {
+  onRespondSignal,
+  voiceChatEnabled,
+  onToggleVoiceChat,
+  socket,
+  roomCode
+}: GameBoardProps) => {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [prevScores, setPrevScores] = useState({ team1: 0, team2: 0 });
   const [scoreAnimating, setScoreAnimating] = useState<'team1' | 'team2' | null>(null);
@@ -239,8 +248,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [trickAnimating, setTrickAnimating] = useState(false);
   const [timeLeft, setTimeLeft] = useState(45);
   const [isMobileLandscape, setIsMobileLandscape] = useState(false);
-  const [showSetsHistory, setShowSetsHistory] = useState(false);
+  const [isMicMuted, setIsMicMuted] = useState(true);
+  const [peers, setPeers] = useState<{ [id: string]: RTCPeerConnection }>({});
+  const [streamReady, setStreamReady] = useState(false);
   const [showTrumpRevealNotification, setShowTrumpRevealNotification] = useState(false);
+  const [showSetsHistory, setShowSetsHistory] = useState(false);
+  const localStreamRef = React.useRef<MediaStream | null>(null);
+  const peersRef = React.useRef<{ [id: string]: RTCPeerConnection }>({});
 
   const prevGameDataRef = React.useRef<GameState | null>(null);
 
@@ -288,8 +302,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       return () => clearTimeout(timer);
     }
   }, [gameData?.lastTrickWinner, gameData?.currentTrick.length]);
-
-
 
   useEffect(() => {
     if (!gameData) return;
@@ -353,6 +365,163 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     prevGameDataRef.current = gameData;
   }, [gameData, currentPlayerId]);
+
+  // Voice Chat Logic - Initialization
+  useEffect(() => {
+    if (!voiceChatEnabled) {
+      // Cleanup
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop());
+        localStreamRef.current = null;
+      }
+      Object.values(peersRef.current).forEach(peer => peer.close());
+      peersRef.current = {};
+      setPeers({});
+      setStreamReady(false);
+      setIsMicMuted(true);
+      return;
+    }
+
+    let mounted = true;
+
+    const init = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (!mounted) {
+            stream.getTracks().forEach(t => t.stop());
+            return;
+        }
+        
+        localStreamRef.current = stream;
+        stream.getAudioTracks()[0].enabled = !isMicMuted;
+        setStreamReady(true);
+
+        // Listeners
+        socket.on('voice_offer', async ({ offer, senderId }: { offer: RTCSessionDescriptionInit, senderId: string }) => {
+            if (!localStreamRef.current) return;
+            
+            // If a peer exists, close it first to avoid state conflicts
+            if (peersRef.current[senderId]) {
+                peersRef.current[senderId].close();
+            }
+
+            const peer = createPeer(senderId, localStreamRef.current);
+            peersRef.current[senderId] = peer;
+            setPeers(prev => ({ ...prev, [senderId]: peer }));
+
+            await peer.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await peer.createAnswer();
+            await peer.setLocalDescription(answer);
+            socket.emit('voice_answer', { answer, targetId: senderId, roomId: roomCode });
+        });
+
+        socket.on('voice_answer', async ({ answer, senderId }: { answer: RTCSessionDescriptionInit, senderId: string }) => {
+            const peer = peersRef.current[senderId];
+            if (peer && peer.signalingState !== 'stable') {
+                await peer.setRemoteDescription(new RTCSessionDescription(answer));
+            }
+        });
+
+        socket.on('voice_ice_candidate', async ({ candidate, senderId }: { candidate: RTCIceCandidateInit, senderId: string }) => {
+            const peer = peersRef.current[senderId];
+            if (peer) {
+                await peer.addIceCandidate(new RTCIceCandidate(candidate));
+            }
+        });
+
+      } catch (e) {
+        console.error("Mic error", e);
+      }
+    };
+
+    init();
+
+    return () => {
+        mounted = false;
+        socket.off('voice_offer');
+        socket.off('voice_answer');
+        socket.off('voice_ice_candidate');
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach(t => t.stop());
+            localStreamRef.current = null;
+        }
+        Object.values(peersRef.current).forEach(p => p.close());
+        peersRef.current = {};
+        setPeers({});
+        setStreamReady(false);
+    };
+  }, [voiceChatEnabled, roomCode, currentPlayerId]);
+
+  // Voice Chat Logic - Connection Management
+  useEffect(() => {
+      if (!streamReady || !localStreamRef.current) return;
+
+      // 1. Remove peers for players who left
+      const currentIds = players.map(p => p.id);
+      Object.keys(peersRef.current).forEach(peerId => {
+          if (!currentIds.includes(peerId)) {
+              peersRef.current[peerId].close();
+              delete peersRef.current[peerId];
+              setPeers(prev => {
+                  const next = {...prev};
+                  delete next[peerId];
+                  return next;
+              });
+          }
+      });
+
+      // 2. Initiate connections for new players (if we are the offerer)
+      players.forEach(player => {
+          if (player.id === currentPlayerId) return;
+          
+          if (!peersRef.current[player.id]) {
+              // ID Comparison to avoid glare: Lower ID initiates
+              if (currentPlayerId < player.id) {
+                  const peer = createPeer(player.id, localStreamRef.current!);
+                  peersRef.current[player.id] = peer;
+                  setPeers(prev => ({ ...prev, [player.id]: peer }));
+                  
+                  peer.createOffer().then(async (offer) => {
+                      await peer.setLocalDescription(offer);
+                      socket.emit('voice_offer', { offer, targetId: player.id, roomId: roomCode });
+                  });
+              }
+          }
+      });
+
+  }, [players, streamReady, currentPlayerId, roomCode]);
+
+  useEffect(() => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getAudioTracks()[0].enabled = !isMicMuted;
+    }
+  }, [isMicMuted]);
+
+  const createPeer = (targetId: string, stream: MediaStream) => {
+    const peer = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+
+    stream.getTracks().forEach(track => peer.addTrack(track, stream));
+
+    peer.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit('voice_ice_candidate', { candidate: event.candidate, targetId, roomId: roomCode });
+      }
+    };
+
+    peer.ontrack = (event) => {
+      const audio = new Audio();
+      audio.srcObject = event.streams[0];
+      audio.play();
+    };
+
+    return peer;
+  };
+
+  const toggleMic = () => {
+    setIsMicMuted(!isMicMuted);
+  };
 
   if (!gameData) return <div className="min-h-screen bg-casino-green-950 flex items-center justify-center text-gold-200 font-playfair text-2xl">Loading Game...</div>;
 
@@ -878,6 +1047,34 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
         {/* Call Trump Button */}
         <div className={`flex items-end pointer-events-auto ${isMobileLandscape ? 'gap-4 fixed bottom-4 right-4 flex-row z-50 items-center' : 'gap-2 md:gap-4'}`}>
+          {/* Voice Chat Controls */}
+          <div className="flex gap-2 mr-2 items-center">
+            {/* Host Global Toggle */}
+            {players.find(p => p.id === currentPlayerId)?.isHost && (
+              <button 
+                onClick={() => onToggleVoiceChat(!voiceChatEnabled)}
+                className={`p-2 md:p-3 rounded-full border transition-all hover:scale-110 group relative ${voiceChatEnabled ? 'bg-green-900/60 border-green-500/30' : 'bg-red-900/60 border-red-500/30'}`}
+                title={voiceChatEnabled ? "Disable Voice Chat for All" : "Enable Voice Chat for All"}
+              >
+                <div className="relative">
+                  {voiceChatEnabled ? <MicIcon className="w-5 h-5 md:w-8 md:h-8 text-green-400" /> : <MicOffIcon className="w-5 h-5 md:w-8 md:h-8 text-red-400" />}
+                  <span className="absolute -top-1 -right-1 text-[8px] bg-gold-500 text-black px-1 rounded-full font-bold">H</span>
+                </div>
+              </button>
+            )}
+
+            {/* Personal Mic Toggle */}
+            {voiceChatEnabled && (
+              <button 
+                onClick={toggleMic} 
+                className={`p-2 md:p-3 rounded-full border transition-all hover:scale-110 group relative ${isMicMuted ? 'bg-red-900/60 border-red-500/30 hover:bg-red-900/80' : 'bg-green-900/60 border-green-500/30 hover:bg-green-900/80'}`} 
+                title={isMicMuted ? "Unmute Mic" : "Mute Mic"}
+              >
+                {isMicMuted ? <MicOffIcon className="w-5 h-5 md:w-8 md:h-8 text-red-400" /> : <MicIcon className="w-5 h-5 md:w-8 md:h-8 text-green-400" />}
+              </button>
+            )}
+          </div>
+
           {/* Secret Signal Buttons */}
           {isMyTurn && gameData.status === 'playing' && (
             <div className="flex gap-2 mr-2">
@@ -1031,11 +1228,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               <span className={`text-gray-400 ${isMobileLandscape ? 'text-[8px]' : 'text-xs'}`}>Tens</span>
               <span className={`font-bold text-white ${isMobileLandscape ? 'text-lg mt-1' : 'text-2xl mt-2'}`}>{gameData.teams.team2.tricksWon}</span>
               <span className={`text-gray-400 ${isMobileLandscape ? 'text-[8px]' : 'text-xs'}`}>Tricks</span>
-            </div>
+                       </div>
           </div>
 
           <div className={`flex gap-4 ${isMobileLandscape ? 'mt-4' : 'mt-12'}`}>
-            <button 
+                       <button 
               onClick={onPlayAgain}
               className={`bg-gold-600 text-black font-bold rounded-full hover:bg-gold-400 transition-colors shadow-lg animate-pulse ${isMobileLandscape ? 'px-4 py-1.5 text-xs' : 'px-8 py-3'}`}
             >
