@@ -837,11 +837,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             onClick={onRevealTrump}
             disabled={!canCallTrump}
             className={`
-              rounded-full border-2 md:border-4 flex items-center justify-center
+              relative rounded-full border-2 md:border-4 flex items-center justify-center
               transform transition-all duration-300
               ${isMobileLandscape ? 'w-16 h-16' : 'w-16 h-16 md:w-24 md:h-24'}
               ${canCallTrump  
-                ? 'bg-gold-gradient border-gold-200 shadow-[0_0_60px_rgba(255,215,0,0.9),inset_0_0_20px_rgba(255,255,255,0.5)] hover:scale-110 active:scale-95 animate-pulse-slow cursor-pointer ring-4 ring-gold-400/80 hover:shadow-[0_0_100px_rgba(255,215,0,1)]' 
+                ? 'bg-linear-to-b from-yellow-200 via-yellow-400 to-yellow-500 border-yellow-200  hover:scale-110 active:scale-95  cursor-pointer ring-4 ring-yellow-400/80 ' 
                 : 'bg-gray-900/80 border-gray-500 cursor-not-allowed backdrop-blur-sm'}
             `}
           >
