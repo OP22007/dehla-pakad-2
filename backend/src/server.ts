@@ -474,6 +474,17 @@ io.on('connection', (socket: Socket) => {
     }
   });
 
+  socket.on('voice_ready', ({ roomId }: { roomId: string }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    
+    const senderPlayer = room.players.find(p => p.socketId === socket.id);
+    if (!senderPlayer) return;
+
+    // Broadcast to everyone else in the room that this player is ready for voice
+    socket.to(roomId).emit('voice_ready', { senderId: senderPlayer.id });
+  });
+
   // Host controls for voice chat
   socket.on('toggle_voice_chat', ({ roomId, enabled }: { roomId: string, enabled: boolean }) => {
     const room = rooms.get(roomId);

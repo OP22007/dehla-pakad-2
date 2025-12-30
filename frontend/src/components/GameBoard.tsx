@@ -255,6 +255,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [showSetsHistory, setShowSetsHistory] = useState(false);
   const localStreamRef = React.useRef<MediaStream | null>(null);
   const peersRef = React.useRef<{ [id: string]: RTCPeerConnection }>({});
+  const audioElementsRef = React.useRef<{ [id: string]: HTMLAudioElement }>({});
 
   const prevGameDataRef = React.useRef<GameState | null>(null);
 
@@ -377,6 +378,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       Object.values(peersRef.current).forEach(peer => peer.close());
       peersRef.current = {};
       setPeers({});
+      
+      // Cleanup audio elements
+      Object.values(audioElementsRef.current).forEach(audio => {
+          audio.pause();
+          audio.srcObject = null;
+      });
+      audioElementsRef.current = {};
+
       setStreamReady(false);
       setIsMicMuted(true);
       return;
@@ -395,8 +404,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         localStreamRef.current = stream;
         stream.getAudioTracks()[0].enabled = !isMicMuted;
         setStreamReady(true);
+        
+        // Announce readiness
+        socket.emit('voice_ready', { roomId: roomCode });
 
         // Listeners
+        socket.on('voice_ready', ({ senderId }: { senderId: string }) => {
+            // If we are the initiator (lower ID), and we don't have a connection yet, start one
+            if (currentPlayerId < senderId && !peersRef.current[senderId] && localStreamRef.current) {
+                const peer = createPeer(senderId, localStreamRef.current);
+                peersRef.current[senderId] = peer;
+                setPeers(prev => ({ ...prev, [senderId]: peer }));
+                
+                peer.createOffer().then(async (offer) => {
+                    await peer.setLocalDescription(offer);
+                    socket.emit('voice_offer', { offer, targetId: senderId, roomId: roomCode });
+                });
+            }
+        });
+
         socket.on('voice_offer', async ({ offer, senderId }: { offer: RTCSessionDescriptionInit, senderId: string }) => {
             if (!localStreamRef.current) return;
             
@@ -441,6 +467,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         socket.off('voice_offer');
         socket.off('voice_answer');
         socket.off('voice_ice_candidate');
+        socket.off('voice_ready');
         if (localStreamRef.current) {
             localStreamRef.current.getTracks().forEach(t => t.stop());
             localStreamRef.current = null;
@@ -448,6 +475,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         Object.values(peersRef.current).forEach(p => p.close());
         peersRef.current = {};
         setPeers({});
+        
+        Object.values(audioElementsRef.current).forEach(audio => {
+            audio.pause();
+            audio.srcObject = null;
+        });
+        audioElementsRef.current = {};
+        
         setStreamReady(false);
     };
   }, [voiceChatEnabled, roomCode, currentPlayerId]);
@@ -513,7 +547,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     peer.ontrack = (event) => {
       const audio = new Audio();
       audio.srcObject = event.streams[0];
-      audio.play();
+      audio.autoplay = true;
+      // @ts-ignore
+      audio.playsInline = true;
+      audio.volume = 1.0;
+      audioElementsRef.current[targetId] = audio;
+      
+      audio.play().catch(e => console.error("Audio play error", e));
     };
 
     return peer;
@@ -1228,7 +1268,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               <span className={`text-gray-400 ${isMobileLandscape ? 'text-[8px]' : 'text-xs'}`}>Tens</span>
               <span className={`font-bold text-white ${isMobileLandscape ? 'text-lg mt-1' : 'text-2xl mt-2'}`}>{gameData.teams.team2.tricksWon}</span>
               <span className={`text-gray-400 ${isMobileLandscape ? 'text-[8px]' : 'text-xs'}`}>Tricks</span>
-                       </div>
+            </div>
           </div>
 
           <div className={`flex gap-4 ${isMobileLandscape ? 'mt-4' : 'mt-12'}`}>
