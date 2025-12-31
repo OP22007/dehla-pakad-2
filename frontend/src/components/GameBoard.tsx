@@ -256,6 +256,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const localStreamRef = React.useRef<MediaStream | null>(null);
   const peersRef = React.useRef<{ [id: string]: RTCPeerConnection }>({});
   const audioElementsRef = React.useRef<{ [id: string]: HTMLAudioElement }>({});
+  const iceCandidatesQueueRef = React.useRef<{ [id: string]: RTCIceCandidateInit[] }>({});
 
   const prevGameDataRef = React.useRef<GameState | null>(null);
 
@@ -410,8 +411,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
         // Listeners
         socket.on('voice_ready', ({ senderId }: { senderId: string }) => {
-            // If we are the initiator (lower ID), and we don't have a connection yet, start one
-            if (currentPlayerId < senderId && !peersRef.current[senderId] && localStreamRef.current) {
+            // If we are the initiator (lower ID), restart connection if needed
+            // We allow overwriting existing peers because the other user just announced they are ready,
+            // so any previous connection attempt might have failed or been ignored.
+            if (currentPlayerId < senderId && localStreamRef.current) {
+                console.log(`Received voice_ready from ${senderId}, initiating connection...`);
+                
+                if (peersRef.current[senderId]) {
+                    console.log(`Closing existing stale connection to ${senderId}`);
+                    peersRef.current[senderId].close();
+                    iceCandidatesQueueRef.current[senderId] = [];
+                }
+
                 const peer = createPeer(senderId, localStreamRef.current);
                 peersRef.current[senderId] = peer;
                 setPeers(prev => ({ ...prev, [senderId]: peer }));
@@ -424,7 +435,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         });
 
         socket.on('voice_offer', async ({ offer, senderId }: { offer: RTCSessionDescriptionInit, senderId: string }) => {
-            if (!localStreamRef.current) return;
+            if (!localStreamRef.current) {
+                console.warn(`Ignored voice_offer from ${senderId} because local stream is not ready.`);
+                return;
+            }
             
             // If a peer exists, close it first to avoid state conflicts
             if (peersRef.current[senderId]) {
@@ -435,23 +449,59 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             peersRef.current[senderId] = peer;
             setPeers(prev => ({ ...prev, [senderId]: peer }));
 
+            // Clear queue for this sender
+            iceCandidatesQueueRef.current[senderId] = [];
+
             await peer.setRemoteDescription(new RTCSessionDescription(offer));
             const answer = await peer.createAnswer();
             await peer.setLocalDescription(answer);
             socket.emit('voice_answer', { answer, targetId: senderId, roomId: roomCode });
+
+            // Process queued candidates
+            const queue = iceCandidatesQueueRef.current[senderId] || [];
+            for (const candidate of queue) {
+                try {
+                    await peer.addIceCandidate(new RTCIceCandidate(candidate));
+                } catch (e) {
+                    console.error("Error adding queued ice candidate", e);
+                }
+            }
+            iceCandidatesQueueRef.current[senderId] = [];
         });
 
         socket.on('voice_answer', async ({ answer, senderId }: { answer: RTCSessionDescriptionInit, senderId: string }) => {
             const peer = peersRef.current[senderId];
             if (peer && peer.signalingState !== 'stable') {
                 await peer.setRemoteDescription(new RTCSessionDescription(answer));
+                
+                // Process queued candidates
+                const queue = iceCandidatesQueueRef.current[senderId] || [];
+                for (const candidate of queue) {
+                    try {
+                        await peer.addIceCandidate(new RTCIceCandidate(candidate));
+                    } catch (e) {
+                        console.error("Error adding queued ice candidate", e);
+                    }
+                }
+                iceCandidatesQueueRef.current[senderId] = [];
             }
         });
 
         socket.on('voice_ice_candidate', async ({ candidate, senderId }: { candidate: RTCIceCandidateInit, senderId: string }) => {
             const peer = peersRef.current[senderId];
             if (peer) {
-                await peer.addIceCandidate(new RTCIceCandidate(candidate));
+                if (peer.remoteDescription) {
+                    try {
+                        await peer.addIceCandidate(new RTCIceCandidate(candidate));
+                    } catch (e) {
+                        console.error("Error adding ice candidate", e);
+                    }
+                } else {
+                    if (!iceCandidatesQueueRef.current[senderId]) {
+                        iceCandidatesQueueRef.current[senderId] = [];
+                    }
+                    iceCandidatesQueueRef.current[senderId].push(candidate);
+                }
             }
         });
 
