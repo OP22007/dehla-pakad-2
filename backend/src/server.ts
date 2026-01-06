@@ -340,7 +340,18 @@ io.on('connection', (socket: Socket) => {
   });
 
   // Play Again / Next Round
-  socket.on('play_again', (callback: (res: ApiResponse) => void) => {
+  socket.on('play_again', (_data: any, callback: (res: ApiResponse) => void) => {
+    // Ensure callback is a function
+    if (typeof callback !== 'function') {
+      // Handle legacy case where only callback was sent? 
+      // Or if strictly enforcing payload, just assume it might be missing
+      if (typeof _data === 'function') {
+          callback = _data;
+      } else {
+          callback = () => {};
+      }
+    }
+
     const roomCode = playerRoomMap.get(socket.id);
     if (!roomCode) return callback({ success: false, error: 'Not in a room' });
 

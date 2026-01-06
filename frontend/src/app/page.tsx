@@ -160,7 +160,11 @@ export default function Home() {
   };
 
   const handlePlayAgain = () => {
-    socket.emit('play_again', { roomCode });
+    socket.emit('play_again', { roomCode }, (response: any) => {
+      if (response && response.error) {
+        setError(response.error);
+      }
+    });
   };
 
   const handleSendSignal = (signal: 'tea' | 'watch' | 'glasses') => {
